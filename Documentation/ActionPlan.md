@@ -64,11 +64,11 @@ This action plan outlines the steps needed to implement the Klaviyo Analytics Da
   - [x] Aggregate campaign metrics (open rates, click rates, etc.)
   - [x] Apply date range filtering
 
-- [ ] **Flows Endpoint**
-  - [ ] Write tests for GET /api/flows
-  - [ ] Implement controller and service layers
-  - [ ] Fetch flow messages and combine with events/metrics
-  - [ ] Calculate flow performance metrics
+- [x] **Flows Endpoint**
+  - [x] Write tests for GET /api/flows
+  - [x] Implement controller and service layers
+  - [x] Fetch flow messages and combine with events/metrics
+  - [x] Calculate flow performance metrics
 
 - [ ] **Forms Endpoint**
   - [ ] Write tests for GET /api/forms

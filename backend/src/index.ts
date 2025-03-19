@@ -9,7 +9,7 @@ dotenv.config();
 // Import routes
 import overviewRoutes from './routes/overview';
 import campaignsRoutes from './routes/campaigns';
-// import flowsRoutes from './routes/flows';
+import flowsRoutes from './routes/flows';
 // import formsRoutes from './routes/forms';
 // import segmentsRoutes from './routes/segments';
 
@@ -46,7 +46,7 @@ app.get('/api/health', (req: Request, res: Response) => {
 // Register routes
 app.use('/api/overview', overviewRoutes);
 app.use('/api/campaigns', campaignsRoutes);
-// app.use('/api/flows', flowsRoutes);
+app.use('/api/flows', flowsRoutes);
 // app.use('/api/forms', formsRoutes);
 // app.use('/api/segments', segmentsRoutes);
 

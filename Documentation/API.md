@@ -121,13 +121,56 @@ Returns campaign performance data for the specified date range.
 | conversionRate | number | Percentage of conversions from the campaign |
 | revenue | number | Revenue generated from the campaign |
 
-### Flows (Coming Soon)
+### Flows
 
 ```
 GET /api/flows
 ```
 
-Will return flow performance metrics for the specified date range.
+Returns flow performance metrics for the specified date range.
+
+#### Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| dateRange | string | No | Date range for metrics (default: `last-30-days`) |
+
+#### Response
+
+```json
+[
+  {
+    "id": "1",
+    "name": "Welcome Series",
+    "recipients": 8450,
+    "openRate": 68.5,
+    "clickRate": 42.8,
+    "conversionRate": 32,
+    "revenue": 24850
+  },
+  {
+    "id": "2",
+    "name": "Abandoned Cart",
+    "recipients": 6280,
+    "openRate": 58.2,
+    "clickRate": 38.5,
+    "conversionRate": 28,
+    "revenue": 18650
+  }
+]
+```
+
+#### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | string | Unique identifier for the flow |
+| name | string | Name of the flow |
+| recipients | number | Number of recipients in the flow |
+| openRate | number | Percentage of emails opened |
+| clickRate | number | Percentage of emails clicked |
+| conversionRate | number | Percentage of conversions from the flow |
+| revenue | number | Revenue generated from the flow |
 
 ### Forms (Coming Soon)
 
