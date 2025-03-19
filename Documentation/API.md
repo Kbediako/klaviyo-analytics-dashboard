@@ -70,13 +70,56 @@ Returns high-level marketing metrics for the specified date range.
 | periodComparison.conversionRate | string | Percentage change in conversion rate |
 | periodComparison.formSubmissions | string | Percentage change in form submissions |
 
-### Campaigns (Coming Soon)
+### Campaigns
 
 ```
 GET /api/campaigns
 ```
 
-Will return campaign performance data for the specified date range.
+Returns campaign performance data for the specified date range.
+
+#### Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| dateRange | string | No | Date range for metrics (default: `last-30-days`) |
+
+#### Response
+
+```json
+[
+  {
+    "id": "1",
+    "name": "Summer Sale Announcement",
+    "sent": 24850,
+    "openRate": 42.8,
+    "clickRate": 18.5,
+    "conversionRate": 8.2,
+    "revenue": 12580
+  },
+  {
+    "id": "2",
+    "name": "New Product Launch",
+    "sent": 18650,
+    "openRate": 38.5,
+    "clickRate": 15.2,
+    "conversionRate": 6.8,
+    "revenue": 9840
+  }
+]
+```
+
+#### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | string | Unique identifier for the campaign |
+| name | string | Name of the campaign |
+| sent | number | Number of emails sent |
+| openRate | number | Percentage of emails opened |
+| clickRate | number | Percentage of emails clicked |
+| conversionRate | number | Percentage of conversions from the campaign |
+| revenue | number | Revenue generated from the campaign |
 
 ### Flows (Coming Soon)
 
