@@ -145,7 +145,7 @@ This action plan outlines the steps needed to implement the Klaviyo Analytics Da
 - [x] **Setup Guide**
   - [x] Create detailed setup instructions
   - [x] Document environment variables
-  - [ ] Add troubleshooting section
+  - [x] Add troubleshooting section
 
 - [ ] **Deployment**
   - [ ] Configure production environment

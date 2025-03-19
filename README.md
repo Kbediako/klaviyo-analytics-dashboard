@@ -132,6 +132,35 @@ npm test
 
 Please refer to the [Action Plan](Documentation/ActionPlan.md) and [Coding Rules](Documentation/CodingRules.md) for detailed information on project structure, coding standards, and implementation guidelines.
 
+## Troubleshooting
+
+### Common Issues
+
+#### Backend API Connection Issues
+
+- **Issue**: Frontend can't connect to backend API
+  - **Solution**: Ensure the backend server is running on port 3001 and that there are no CORS issues.
+
+- **Issue**: "Missing required environment variable" error
+  - **Solution**: Make sure all required environment variables are set in your `.env` file.
+
+- **Issue**: Klaviyo API errors
+  - **Solution**: Verify your API key is correct and that you're not exceeding Klaviyo's rate limits.
+
+#### Performance Issues
+
+- **Issue**: Slow API responses
+  - **Solution**: The application implements caching. Check that the cache is working properly.
+
+- **Issue**: High memory usage
+  - **Solution**: Consider implementing pagination for large data sets.
+
+### Debugging
+
+- Check the browser console for frontend errors
+- Examine the server logs for backend errors
+- Use the `/api/health` endpoint to verify the API is running correctly
+
 ## License
 
 This project is licensed under the MIT License.
