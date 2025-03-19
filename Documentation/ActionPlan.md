@@ -106,17 +106,17 @@ This action plan outlines the steps needed to implement the Klaviyo Analytics Da
   - [x] Implement data fetching hooks
   - [x] Add period comparison calculations
 
-- [ ] **Dashboard Components**
-  - [ ] Connect overview metrics to API
-  - [ ] Integrate campaigns table with API data
-  - [ ] Connect flows section to backend data
-  - [ ] Link forms metrics to API
-  - [ ] Add segments data if needed
+- [x] **Dashboard Components**
+  - [x] Connect overview metrics to API
+  - [x] Integrate campaigns table with API data
+  - [x] Connect flows section to backend data
+  - [x] Link forms metrics to API
+  - [x] Add segments data if needed
 
-- [ ] **Loading & Error States**
-  - [ ] Implement skeleton loaders for data fetching
-  - [ ] Add error handling UI components
-  - [ ] Create retry mechanisms for failed requests
+- [x] **Loading & Error States**
+  - [x] Implement skeleton loaders for data fetching
+  - [x] Add error handling UI components
+  - [x] Create retry mechanisms for failed requests
 
 ## Testing & Quality Assurance
 

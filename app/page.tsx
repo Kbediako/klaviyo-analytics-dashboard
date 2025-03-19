@@ -1,7 +1,12 @@
 "use client"
 
-import AnalyticsDashboard from "../analytics-dashboard"
+import { Dashboard } from "../components/dashboard"
+import { ThemeProvider } from "../components/theme-provider"
 
-export default function SyntheticV0PageForDeployment() {
-  return <AnalyticsDashboard />
+export default function Home() {
+  return (
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <Dashboard />
+    </ThemeProvider>
+  )
 }
