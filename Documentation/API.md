@@ -1,0 +1,124 @@
+# Klaviyo Analytics Dashboard API Documentation
+
+This document provides detailed information about the API endpoints available in the Klaviyo Analytics Dashboard backend.
+
+## Base URL
+
+All API endpoints are relative to the base URL:
+
+```
+http://localhost:3001/api
+```
+
+## Authentication
+
+Currently, the API does not require authentication as it's designed to be used internally. The backend securely stores and uses the Klaviyo API key for all requests to the Klaviyo API.
+
+## Date Range Format
+
+Many endpoints accept a `dateRange` query parameter that can be in the following formats:
+
+- Predefined ranges: `last-7-days`, `last-30-days`, `last-90-days`
+- Custom range: `2023-01-01_to_2023-02-01` (ISO date format with underscore separator)
+
+If no date range is provided, the default is `last-30-days`.
+
+## Endpoints
+
+### Overview
+
+```
+GET /api/overview
+```
+
+Returns high-level marketing metrics for the specified date range.
+
+#### Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| dateRange | string | No | Date range for metrics (default: `last-30-days`) |
+
+#### Response
+
+```json
+{
+  "totalRevenue": 42582,
+  "activeSubscribers": 24853,
+  "conversionRate": 18.5,
+  "formSubmissions": 3842,
+  "periodComparison": {
+    "totalRevenue": "+10.0%",
+    "activeSubscribers": "+5.2%",
+    "conversionRate": "-2.1%",
+    "formSubmissions": "+15.3%"
+  }
+}
+```
+
+#### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| totalRevenue | number | Total revenue generated in the specified period |
+| activeSubscribers | number | Number of active subscribers |
+| conversionRate | number | Conversion rate as a percentage |
+| formSubmissions | number | Number of form submissions |
+| periodComparison | object | Comparison with previous period |
+| periodComparison.totalRevenue | string | Percentage change in total revenue |
+| periodComparison.activeSubscribers | string | Percentage change in active subscribers |
+| periodComparison.conversionRate | string | Percentage change in conversion rate |
+| periodComparison.formSubmissions | string | Percentage change in form submissions |
+
+### Campaigns (Coming Soon)
+
+```
+GET /api/campaigns
+```
+
+Will return campaign performance data for the specified date range.
+
+### Flows (Coming Soon)
+
+```
+GET /api/flows
+```
+
+Will return flow performance metrics for the specified date range.
+
+### Forms (Coming Soon)
+
+```
+GET /api/forms
+```
+
+Will return form submission and conversion data for the specified date range.
+
+### Segments (Coming Soon)
+
+```
+GET /api/segments
+```
+
+Will return segment membership and performance data for the specified date range.
+
+## Error Handling
+
+All endpoints return appropriate HTTP status codes:
+
+- `200 OK`: Request successful
+- `400 Bad Request`: Invalid request parameters
+- `500 Internal Server Error`: Server-side error
+
+Error responses include a JSON object with error details:
+
+```json
+{
+  "error": "Error message",
+  "message": "Detailed error message"
+}
+```
+
+## Rate Limiting
+
+The API currently does not implement rate limiting, but it's recommended to avoid making too many requests in a short period to prevent hitting Klaviyo API rate limits.
