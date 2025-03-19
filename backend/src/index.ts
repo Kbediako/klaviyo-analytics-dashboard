@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { cacheMiddleware } from './middleware/cacheMiddleware';
+import { defaultRateLimiter, strictRateLimiter } from './middleware/rateLimitMiddleware';
 
 // Load environment variables
 dotenv.config();
@@ -53,12 +54,18 @@ const CACHE_TTLS = {
   segments: 600,    // 10 minutes
 };
 
+// Apply default rate limiter to all API routes
+app.use('/api', defaultRateLimiter);
+
 // Register routes with caching
 app.use('/api/overview', cacheMiddleware(CACHE_TTLS.overview), overviewRoutes);
 app.use('/api/campaigns', cacheMiddleware(CACHE_TTLS.campaigns), campaignsRoutes);
 app.use('/api/flows', cacheMiddleware(CACHE_TTLS.flows), flowsRoutes);
 app.use('/api/forms', cacheMiddleware(CACHE_TTLS.forms), formsRoutes);
 app.use('/api/segments', cacheMiddleware(CACHE_TTLS.segments), segmentsRoutes);
+
+// Apply stricter rate limits to the health endpoint
+app.use('/api/health', strictRateLimiter);
 
 // Start server
 if (process.env.NODE_ENV !== 'test') {
