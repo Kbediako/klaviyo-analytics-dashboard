@@ -1,5 +1,7 @@
 # Klaviyo Analytics Dashboard
 
+[![CI Status](https://github.com/yourusername/klaviyo-analytics-dashboard/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/klaviyo-analytics-dashboard/actions/workflows/ci.yml)
+
 A comprehensive analytics dashboard for Klaviyo marketing data, featuring real-time metrics, campaign performance, and customer insights.
 
 ## Project Structure

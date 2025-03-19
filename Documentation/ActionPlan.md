@@ -25,7 +25,7 @@ This action plan outlines the steps needed to implement the Klaviyo Analytics Da
 - [x] **GitHub Workflow Setup**
   - [x] Create .github/workflows/ci.yml for running tests and linting
   - [x] Configure workflow to run on PRs to main branch
-  - [ ] Add build status badge to README
+  - [x] Add build status badge to README
 
 - [x] **Testing Framework**
   - [x] Setup Jest/Vitest for unit testing
