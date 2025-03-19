@@ -220,13 +220,50 @@ Returns form submission and conversion data for the specified date range.
 | submissionRate | number | Percentage of views that resulted in submissions |
 | conversions | number | Number of conversions from form submissions |
 
-### Segments (Coming Soon)
+### Segments
 
 ```
 GET /api/segments
 ```
 
-Will return segment membership and performance data for the specified date range.
+Returns segment membership and performance data for the specified date range.
+
+#### Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| dateRange | string | No | Date range for metrics (default: `last-30-days`) |
+
+#### Response
+
+```json
+[
+  {
+    "id": "1",
+    "name": "VIP Customers",
+    "count": 5842,
+    "conversionRate": 42,
+    "revenue": 28450
+  },
+  {
+    "id": "2",
+    "name": "Active Subscribers",
+    "count": 24853,
+    "conversionRate": 28,
+    "revenue": 42580
+  }
+]
+```
+
+#### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | string | Unique identifier for the segment |
+| name | string | Name of the segment |
+| count | number | Number of profiles in the segment |
+| conversionRate | number | Conversion rate for the segment as a percentage |
+| revenue | number | Revenue generated from the segment |
 
 ## Error Handling
 

@@ -76,11 +76,11 @@ This action plan outlines the steps needed to implement the Klaviyo Analytics Da
   - [x] Gather form views, submissions, and conversion data
   - [x] Calculate submission rates
 
-- [ ] **Segments Endpoint**
-  - [ ] Write tests for GET /api/segments
-  - [ ] Implement controller and service layers
-  - [ ] Get segment membership counts
-  - [ ] Calculate segment-specific metrics
+- [x] **Segments Endpoint**
+  - [x] Write tests for GET /api/segments
+  - [x] Implement controller and service layers
+  - [x] Get segment membership counts
+  - [x] Calculate segment-specific metrics
 
 ### 3. Performance Optimization
 

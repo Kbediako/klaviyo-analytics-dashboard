@@ -11,7 +11,7 @@ import overviewRoutes from './routes/overview';
 import campaignsRoutes from './routes/campaigns';
 import flowsRoutes from './routes/flows';
 import formsRoutes from './routes/forms';
-// import segmentsRoutes from './routes/segments';
+import segmentsRoutes from './routes/segments';
 
 // Initialize Express app
 const app = express();
@@ -48,7 +48,7 @@ app.use('/api/overview', overviewRoutes);
 app.use('/api/campaigns', campaignsRoutes);
 app.use('/api/flows', flowsRoutes);
 app.use('/api/forms', formsRoutes);
-// app.use('/api/segments', segmentsRoutes);
+app.use('/api/segments', segmentsRoutes);
 
 // Start server
 if (process.env.NODE_ENV !== 'test') {
