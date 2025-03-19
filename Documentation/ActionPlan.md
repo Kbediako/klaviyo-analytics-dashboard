@@ -130,10 +130,10 @@ This action plan outlines the steps needed to implement the Klaviyo Analytics Da
   - [ ] Verify data transformation logic
   - [ ] Test with different date ranges
 
-- [ ] **End-to-End Testing**
-  - [ ] Create basic E2E tests for the dashboard
-  - [ ] Test date range selection functionality
-  - [ ] Verify metrics calculation accuracy
+- [x] **End-to-End Testing**
+  - [x] Create basic E2E tests for the dashboard
+  - [x] Test date range selection functionality
+  - [x] Verify metrics calculation accuracy
 
 ## Documentation & Deployment
 
