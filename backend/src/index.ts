@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import { cacheMiddleware } from './middleware/cacheMiddleware';
 
 // Load environment variables
 dotenv.config();
@@ -43,12 +44,21 @@ app.get('/api/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Register routes
-app.use('/api/overview', overviewRoutes);
-app.use('/api/campaigns', campaignsRoutes);
-app.use('/api/flows', flowsRoutes);
-app.use('/api/forms', formsRoutes);
-app.use('/api/segments', segmentsRoutes);
+// Define cache TTLs (in seconds) for different endpoints
+const CACHE_TTLS = {
+  overview: 300,    // 5 minutes
+  campaigns: 600,   // 10 minutes
+  flows: 600,       // 10 minutes
+  forms: 600,       // 10 minutes
+  segments: 600,    // 10 minutes
+};
+
+// Register routes with caching
+app.use('/api/overview', cacheMiddleware(CACHE_TTLS.overview), overviewRoutes);
+app.use('/api/campaigns', cacheMiddleware(CACHE_TTLS.campaigns), campaignsRoutes);
+app.use('/api/flows', cacheMiddleware(CACHE_TTLS.flows), flowsRoutes);
+app.use('/api/forms', cacheMiddleware(CACHE_TTLS.forms), formsRoutes);
+app.use('/api/segments', cacheMiddleware(CACHE_TTLS.segments), segmentsRoutes);
 
 // Start server
 if (process.env.NODE_ENV !== 'test') {
