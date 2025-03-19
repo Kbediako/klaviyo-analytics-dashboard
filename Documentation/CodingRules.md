@@ -4,20 +4,16 @@
 
 ### Repository Layout
 ```
-analytics-app/
-├── frontend/
-│   └── (Next.js or React code)
-├── backend/
-│   ├── src/
-│   │   ├── controllers/
-│   │   ├── routes/
-│   │   ├── services/
-│   │   └── tests/
-│   ├── package.json
-│   ├── tsconfig.json
-│   └── jest.config.js
-└── .github/
-    └── workflows/
+This project is organized with the frontend in the root directory and the backend in a separate folder:
+
+```
+klaviyo-analytics-dashboard/
+├── app/                # Next.js app directory
+├── components/         # UI components
+├── public/             # Static assets
+├── styles/             # Global styles
+├── analytics-dashboard.tsx # Main dashboard component
+└── backend/            # Node.js/Express backend (API)
 ```
 
 ## Development Approach

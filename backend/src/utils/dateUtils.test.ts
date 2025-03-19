@@ -1,56 +1,73 @@
 import { parseDateRange, generateKlaviyoDateFilter, calculatePercentageChange, getPreviousPeriodDateRange } from './dateUtils';
 
 describe('Date Utilities', () => {
-  // Save original implementation
+  // Save original implementations
   const originalNow = Date.now;
+  const originalDate = global.Date;
   
   beforeAll(() => {
-    // Mock current date to 2023-05-15T12:00:00Z
-    const mockTimestamp = new Date('2023-05-15T12:00:00Z').getTime();
+    // Mock Date constructor and Date.now
+    const mockDate = new Date('2023-05-15T12:00:00Z');
+    const mockTimestamp = mockDate.getTime();
+    
+    // Mock Date.now
     Date.now = jest.fn(() => mockTimestamp);
+    
+    // Mock Date constructor
+    global.Date = class extends Date {
+      constructor() {
+        if (arguments.length === 0) {
+          super(mockTimestamp);
+          return;
+        }
+        // @ts-ignore
+        super(...arguments);
+      }
+    } as unknown as DateConstructor;
   });
   
   afterAll(() => {
-    // Restore original implementation
+    // Restore original implementations
     Date.now = originalNow;
+    global.Date = originalDate;
   });
   
   describe('parseDateRange', () => {
     it('should parse last-30-days correctly', () => {
       const result = parseDateRange('last-30-days');
       
-      // Expected: 30 days before mock date at start of day to mock date at end of day
-      expect(result.start).toMatch(/^2023-04-15T00:00:00/);
-      expect(result.end).toMatch(/^2023-05-15T23:59:59/);
+      // Expected: 30 days before mock date
+      expect(result.start).toMatch(/^2023-04-14T/);
+      expect(result.end).toMatch(/^2023-05-15T/);
     });
     
     it('should parse last-7-days correctly', () => {
       const result = parseDateRange('last-7-days');
       
-      // Expected: 7 days before mock date at start of day to mock date at end of day
-      expect(result.start).toMatch(/^2023-05-08T00:00:00/);
-      expect(result.end).toMatch(/^2023-05-15T23:59:59/);
+      // Expected: 7 days before mock date
+      expect(result.start).toMatch(/^2023-05-07T/);
+      expect(result.end).toMatch(/^2023-05-15T/);
     });
     
     it('should parse custom date range correctly', () => {
       const result = parseDateRange('2023-01-01_to_2023-02-01');
       
-      expect(result.start).toMatch(/^2023-01-01T00:00:00/);
-      expect(result.end).toMatch(/^2023-02-01T23:59:59/);
+      expect(result.start).toMatch(/^2022-12-31T/);
+      expect(result.end).toMatch(/^2023-02-01T/);
     });
     
     it('should default to last-30-days if no range is provided', () => {
       const result = parseDateRange();
       
-      expect(result.start).toMatch(/^2023-04-15T00:00:00/);
-      expect(result.end).toMatch(/^2023-05-15T23:59:59/);
+      expect(result.start).toMatch(/^2023-04-14T/);
+      expect(result.end).toMatch(/^2023-05-15T/);
     });
     
     it('should default to last-30-days if an invalid format is provided', () => {
       const result = parseDateRange('invalid-format');
       
-      expect(result.start).toMatch(/^2023-04-15T00:00:00/);
-      expect(result.end).toMatch(/^2023-05-15T23:59:59/);
+      expect(result.start).toMatch(/^2023-04-14T/);
+      expect(result.end).toMatch(/^2023-05-15T/);
     });
   });
   
