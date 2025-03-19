@@ -4,9 +4,16 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { cacheMiddleware } from './middleware/cacheMiddleware';
 import { defaultRateLimiter, strictRateLimiter } from './middleware/rateLimitMiddleware';
+import { initEnv } from './utils/envValidator';
 
 // Load environment variables
 dotenv.config();
+
+// Validate environment variables
+if (!initEnv()) {
+  console.error('Failed to initialize environment variables. Exiting...');
+  process.exit(1);
+}
 
 // Import routes
 import overviewRoutes from './routes/overview';
