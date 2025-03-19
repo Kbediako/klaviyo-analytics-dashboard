@@ -172,13 +172,53 @@ Returns flow performance metrics for the specified date range.
 | conversionRate | number | Percentage of conversions from the flow |
 | revenue | number | Revenue generated from the flow |
 
-### Forms (Coming Soon)
+### Forms
 
 ```
 GET /api/forms
 ```
 
-Will return form submission and conversion data for the specified date range.
+Returns form submission and conversion data for the specified date range.
+
+#### Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| dateRange | string | No | Date range for metrics (default: `last-30-days`) |
+
+#### Response
+
+```json
+[
+  {
+    "id": "1",
+    "name": "Newsletter Signup",
+    "views": 12480,
+    "submissions": 4742,
+    "submissionRate": 38,
+    "conversions": 1850
+  },
+  {
+    "id": "2",
+    "name": "Contact Form",
+    "views": 8650,
+    "submissions": 2850,
+    "submissionRate": 33,
+    "conversions": 950
+  }
+]
+```
+
+#### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | string | Unique identifier for the form |
+| name | string | Name of the form |
+| views | number | Number of form views |
+| submissions | number | Number of form submissions |
+| submissionRate | number | Percentage of views that resulted in submissions |
+| conversions | number | Number of conversions from form submissions |
 
 ### Segments (Coming Soon)
 

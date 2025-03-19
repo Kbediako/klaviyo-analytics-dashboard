@@ -70,11 +70,11 @@ This action plan outlines the steps needed to implement the Klaviyo Analytics Da
   - [x] Fetch flow messages and combine with events/metrics
   - [x] Calculate flow performance metrics
 
-- [ ] **Forms Endpoint**
-  - [ ] Write tests for GET /api/forms
-  - [ ] Implement controller and service layers
-  - [ ] Gather form views, submissions, and conversion data
-  - [ ] Calculate submission rates
+- [x] **Forms Endpoint**
+  - [x] Write tests for GET /api/forms
+  - [x] Implement controller and service layers
+  - [x] Gather form views, submissions, and conversion data
+  - [x] Calculate submission rates
 
 - [ ] **Segments Endpoint**
   - [ ] Write tests for GET /api/segments
