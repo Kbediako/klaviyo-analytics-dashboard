@@ -15,6 +15,24 @@ For detailed implementation steps, see [Implementation Phases](./implementation/
 5. [Frontend Integration](./implementation/phases/05-frontend-integration.md) (Weeks 9-10)
 6. [Testing and Deployment](./implementation/phases/06-testing-and-deployment.md) (Weeks 11-12)
 
+### Gap Remediation Plan
+
+After completing the six phases, we've identified several gaps that need to be addressed to ensure the system is fully production-ready. The [Gap Remediation Plan](./implementation/gap-remediation-plan.md) outlines a comprehensive approach to address these gaps over an 8-week period:
+
+- **Weeks 1-2:** Phase 1 & 2 Gap Remediation
+- **Weeks 3-4:** Phase 3 Gap Remediation
+- **Weeks 5-6:** Phase 4 & 5 Gap Remediation
+- **Weeks 7-8:** Phase 6 & Cross-Cutting Gap Remediation
+
+Key gaps being addressed include:
+- Missing repositories (FlowRepository, FormRepository, SegmentRepository)
+- Incomplete controller updates for database-first approach
+- Missing sync endpoints
+- Incremental sync implementation
+- Enhanced error handling and monitoring
+- CI/CD pipeline completion
+- Performance and security improvements
+
 ## Architecture
 
 ### Current Architecture
@@ -258,9 +276,68 @@ const metric = await metricRepository.create({
 
 ### Testing
 - Write comprehensive tests
-- Use appropriate mocks
-- Test edge cases
-- Verify error handling
+  - Unit tests for services and utilities
+  - Integration tests for repositories
+  - E2E tests for API endpoints
+- Use appropriate mocks (nock for HTTP requests)
+- Test edge cases and error scenarios
+- Verify error handling and rate limiting
+- Run tests with `npm test` in the backend directory
+
+## Deployment
+
+### Docker Setup
+The project includes Docker configuration for production deployment:
+
+```bash
+# Build and start the production environment
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+The Docker setup includes:
+- Multi-stage build for optimized image size
+- TimescaleDB for time-series data
+- Redis for caching
+- Nginx for reverse proxy
+- Health checks for all services
+- Persistent volumes for data
+
+### CI/CD Pipeline
+The project uses GitHub Actions for CI/CD:
+
+1. **Testing Stage**:
+   - Runs linting and tests
+   - Verifies builds for frontend and backend
+   - Uses test database and Redis services
+
+2. **Build Stage**:
+   - Builds Docker image
+   - Pushes to Docker registry
+   - Tags with commit SHA and latest
+
+3. **Deployment Stages**:
+   - Deploys to staging environment
+   - Requires approval for production
+   - Deploys to production environment
+   - Includes cleanup of old images
+
+### Environment Variables for Production
+Additional environment variables for production:
+
+```bash
+# Docker Registry
+DOCKERHUB_USERNAME=your_username
+DOCKERHUB_TOKEN=your_token
+
+# Deployment Credentials
+STAGING_HOST=staging.example.com
+STAGING_USERNAME=deploy
+STAGING_SSH_KEY=your_ssh_key
+
+PRODUCTION_HOST=production.example.com
+PRODUCTION_USERNAME=deploy
+PRODUCTION_SSH_KEY=your_ssh_key
+```
 
 ## Future Enhancements
 
