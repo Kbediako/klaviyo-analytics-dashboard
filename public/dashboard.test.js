@@ -144,6 +144,134 @@ window.mockApiResponses = {
       openRate: 28,
       revenue: 18650
     }
+  ],
+
+  // Chart endpoints
+  'charts/revenue': [
+    {
+      date: '2024-03-01',
+      campaigns: 12580,
+      flows: 24850,
+      forms: 8450,
+      other: 4250
+    },
+    {
+      date: '2024-03-02',
+      campaigns: 15680,
+      flows: 22450,
+      forms: 9250,
+      other: 3850
+    },
+    {
+      date: '2024-03-03',
+      campaigns: 18450,
+      flows: 26850,
+      forms: 7850,
+      other: 4650
+    },
+    {
+      date: '2024-03-04',
+      campaigns: 14580,
+      flows: 23450,
+      forms: 8950,
+      other: 4150
+    },
+    {
+      date: '2024-03-05',
+      campaigns: 16780,
+      flows: 25650,
+      forms: 8250,
+      other: 4450
+    }
+  ],
+
+  'charts/distribution': [
+    {
+      name: 'Campaigns',
+      value: 35,
+      color: 'blue'
+    },
+    {
+      name: 'Flows',
+      value: 45,
+      color: 'violet'
+    },
+    {
+      name: 'Forms',
+      value: 15,
+      color: 'amber'
+    },
+    {
+      name: 'Other',
+      value: 5,
+      color: 'emerald'
+    }
+  ],
+
+  'charts/top-segments': [
+    {
+      id: 1,
+      name: 'VIP Customers',
+      conversionRate: 42,
+      count: 5842,
+      revenue: 28450
+    },
+    {
+      id: 2,
+      name: 'Frequent Shoppers',
+      conversionRate: 38,
+      count: 8450,
+      revenue: 24850
+    },
+    {
+      id: 3,
+      name: 'New Subscribers',
+      conversionRate: 28,
+      count: 12480,
+      revenue: 18650
+    }
+  ],
+
+  'charts/top-flows': [
+    {
+      id: 1,
+      name: 'Welcome Series',
+      recipients: 8450,
+      conversionRate: 32
+    },
+    {
+      id: 2,
+      name: 'Abandoned Cart',
+      recipients: 5280,
+      conversionRate: 28.5
+    },
+    {
+      id: 3,
+      name: 'Post-Purchase',
+      recipients: 4250,
+      conversionRate: 18.2
+    }
+  ],
+
+  'charts/top-forms': [
+    {
+      id: 1,
+      name: 'Newsletter Signup',
+      views: 12480,
+      submissionRate: 38
+    },
+    {
+      id: 2,
+      name: 'Exit Intent Popup',
+      views: 8450,
+      submissionRate: 30
+    },
+    {
+      id: 3,
+      name: 'Product Registration',
+      views: 5280,
+      submissionRate: 25
+    }
   ]
 };
 
@@ -160,7 +288,7 @@ describe('Klaviyo Analytics Dashboard Tests', () => {
       await new Promise(resolve => setTimeout(resolve, 100));
       
       // Parse the endpoint from the URL
-      const endpoint = url.split('/').pop().split('?')[0];
+      const endpoint = url.split('/api/')[1]?.split('?')[0];
       
       // Return mock response based on endpoint
       if (window.mockApiResponses[endpoint]) {

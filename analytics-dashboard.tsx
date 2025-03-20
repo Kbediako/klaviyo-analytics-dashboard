@@ -1,14 +1,15 @@
 "use client"
 
 import { useState } from "react"
-import { useRevenueChartData, useChannelDistributionData, useTopSegmentsData, useTopFlowsData, useTopFormsData } from "@/hooks/use-chart-data"
-import { useCampaigns } from "@/hooks/use-campaigns"
-import { useFlows } from "@/hooks/use-flows"
-import { useForms } from "@/hooks/use-forms"
-import { useOverviewMetrics } from "@/hooks/use-overview-metrics"
-import { RevenueChart } from "@/components/revenue-chart"
-import { ChannelDistributionChart } from "@/components/channel-distribution-chart"
-import { MetricCardSkeleton } from "@/components/metric-card-skeleton"
+import { useRevenueChartData, useChannelDistributionData, useTopSegmentsData, useTopFlowsData, useTopFormsData } from "./hooks/use-chart-data"
+import { useCampaigns } from "./hooks/use-campaigns"
+import { useFlows } from "./hooks/use-flows"
+import { useForms } from "./hooks/use-forms"
+import { useOverviewMetrics } from "./hooks/use-overview-metrics"
+import { RevenueChart } from "./components/revenue-chart"
+import { ChannelDistributionChart } from "./components/channel-distribution-chart"
+import { MetricCardSkeleton } from "./components/metric-card-skeleton"
+import { FormsTable } from "./components/forms-table"
 import { 
   OverviewMetrics, 
   RevenueDataPoint, 
@@ -19,7 +20,7 @@ import {
   Campaign,
   Flow,
   Form
-} from "@/lib/api-client"
+} from "./lib/api-client"
 
 interface RevenueChartProps {
   data: RevenueDataPoint[];
@@ -62,15 +63,14 @@ import {
   FormInput,
 } from "lucide-react"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Progress } from "@/components/ui/progress"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
-import { Separator } from "@/components/ui/separator"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./components/ui/card"
+import { Button } from "./components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "./components/ui/avatar"
+import { Progress } from "./components/ui/progress"
+import { Badge } from "./components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./components/ui/select"
+import { Input } from "./components/ui/input"
+import { Separator } from "./components/ui/separator"
 
 export default function AnalyticsDashboard() {
   const [dateRange, setDateRange] = useState("last-30-days")
@@ -136,65 +136,107 @@ export default function AnalyticsDashboard() {
           <p className="text-muted-foreground mt-1">Track performance across campaigns, flows, segments, and forms</p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {isLoadingOverview ? (
-            <>
-              <MetricCardSkeleton />
-              <MetricCardSkeleton />
-              <MetricCardSkeleton />
-              <MetricCardSkeleton />
-            </>
-          ) : (
-            <>
-              <MetricCard
-                title="Total Revenue"
-                value={overviewMetrics?.revenue?.current ? `$${overviewMetrics.revenue.current.toLocaleString()}` : '$0'}
-                change={overviewMetrics?.revenue?.change !== undefined ? `${overviewMetrics.revenue.change > 0 ? '+' : ''}${overviewMetrics.revenue.change}%` : '0%'}
-                trend={overviewMetrics?.revenue?.change ? overviewMetrics.revenue.change > 0 ? 'up' : 'down' : 'down'}
-                icon={<DollarSign className="h-4 w-4" />}
-                description="vs previous period"
-                color="emerald"
-              />
-              <MetricCard
-                title="Active Subscribers"
-                value={overviewMetrics?.subscribers?.current ? overviewMetrics.subscribers.current.toLocaleString() : '0'}
-                change={overviewMetrics?.subscribers?.change !== undefined ? `${overviewMetrics.subscribers.change > 0 ? '+' : ''}${overviewMetrics.subscribers.change}%` : '0%'}
-                trend={overviewMetrics?.subscribers?.change ? overviewMetrics.subscribers.change > 0 ? 'up' : 'down' : 'down'}
-                icon={<Users className="h-4 w-4" />}
-                description="vs previous period"
-                color="blue"
-              />
-              <MetricCard
-                title="Conversion Rate"
-                value={overviewMetrics?.conversionRate?.current ? `${overviewMetrics.conversionRate.current}%` : '0%'}
-                change={overviewMetrics?.conversionRate?.change !== undefined ? `${overviewMetrics.conversionRate.change > 0 ? '+' : ''}${overviewMetrics.conversionRate.change}%` : '0%'}
-                trend={overviewMetrics?.conversionRate?.change ? overviewMetrics.conversionRate.change > 0 ? 'up' : 'down' : 'down'}
-                icon={<ShoppingCart className="h-4 w-4" />}
-                description="vs previous period"
-                color="violet"
-              />
-              <MetricCard
-                title="Form Submissions"
-                value={overviewMetrics?.formSubmissions?.current ? overviewMetrics.formSubmissions.current.toLocaleString() : '0'}
-                change={overviewMetrics?.formSubmissions?.change !== undefined ? `${overviewMetrics.formSubmissions.change > 0 ? '+' : ''}${overviewMetrics.formSubmissions.change}%` : '0%'}
-                trend={overviewMetrics?.formSubmissions?.change ? overviewMetrics.formSubmissions.change > 0 ? 'up' : 'down' : 'down'}
-                icon={<FormInput className="h-4 w-4" />}
-                description="vs previous period"
-                color="amber"
-              />
-            </>
-          )}
-        </div>
+        <div className="w-full space-y-6">
+          <div className="flex items-center gap-2">
+            <button 
+              className={`px-4 py-2 rounded-md ${activeTab === "overview" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
+              onClick={(e) => {
+                e.preventDefault();
+                setActiveTab("overview");
+              }}
+            >
+              Overview
+            </button>
+            <button 
+              className={`px-4 py-2 rounded-md ${activeTab === "campaigns" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
+              onClick={(e) => {
+                e.preventDefault();
+                setActiveTab("campaigns");
+              }}
+            >
+              Campaigns
+            </button>
+            <button 
+              className={`px-4 py-2 rounded-md ${activeTab === "flows" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
+              onClick={(e) => {
+                e.preventDefault();
+                setActiveTab("flows");
+              }}
+            >
+              Flows
+            </button>
+            <button 
+              className={`px-4 py-2 rounded-md ${activeTab === "forms" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
+              onClick={(e) => {
+                e.preventDefault();
+                setActiveTab("forms");
+              }}
+            >
+              Forms
+            </button>
+            <button 
+              className={`px-4 py-2 rounded-md ${activeTab === "segments" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
+              onClick={(e) => {
+                e.preventDefault();
+                setActiveTab("segments");
+              }}
+            >
+              Segments
+            </button>
+          </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-4 mb-2">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
-            <TabsTrigger value="flows">Flows</TabsTrigger>
-            <TabsTrigger value="forms">Forms</TabsTrigger>
-          </TabsList>
+          {activeTab === "overview" && (
+            <div className="space-y-6">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+              {isLoadingOverview ? (
+                <>
+                  <MetricCardSkeleton />
+                  <MetricCardSkeleton />
+                  <MetricCardSkeleton />
+                  <MetricCardSkeleton />
+                </>
+              ) : (
+                <>
+                  <MetricCard
+                    title="Total Revenue"
+                    value={overviewMetrics?.revenue?.current ? `$${overviewMetrics.revenue.current.toLocaleString()}` : '$0'}
+                    change={overviewMetrics?.revenue?.change !== undefined ? `${overviewMetrics.revenue.change > 0 ? '+' : ''}${overviewMetrics.revenue.change}%` : '0%'}
+                    trend={overviewMetrics?.revenue?.change ? overviewMetrics.revenue.change > 0 ? 'up' : 'down' : 'down'}
+                    icon={<DollarSign className="h-4 w-4" />}
+                    description="vs previous period"
+                    color="emerald"
+                  />
+                  <MetricCard
+                    title="Active Subscribers"
+                    value={overviewMetrics?.subscribers?.current ? overviewMetrics.subscribers.current.toLocaleString() : '0'}
+                    change={overviewMetrics?.subscribers?.change !== undefined ? `${overviewMetrics.subscribers.change > 0 ? '+' : ''}${overviewMetrics.subscribers.change}%` : '0%'}
+                    trend={overviewMetrics?.subscribers?.change ? overviewMetrics.subscribers.change > 0 ? 'up' : 'down' : 'down'}
+                    icon={<Users className="h-4 w-4" />}
+                    description="vs previous period"
+                    color="blue"
+                  />
+                  <MetricCard
+                    title="Conversion Rate"
+                    value={overviewMetrics?.conversionRate?.current ? `${overviewMetrics.conversionRate.current}%` : '0%'}
+                    change={overviewMetrics?.conversionRate?.change !== undefined ? `${overviewMetrics.conversionRate.change > 0 ? '+' : ''}${overviewMetrics.conversionRate.change}%` : '0%'}
+                    trend={overviewMetrics?.conversionRate?.change ? overviewMetrics.conversionRate.change > 0 ? 'up' : 'down' : 'down'}
+                    icon={<ShoppingCart className="h-4 w-4" />}
+                    description="vs previous period"
+                    color="violet"
+                  />
+                  <MetricCard
+                    title="Form Submissions"
+                    value={overviewMetrics?.formSubmissions?.current ? overviewMetrics.formSubmissions.current.toLocaleString() : '0'}
+                    change={overviewMetrics?.formSubmissions?.change !== undefined ? `${overviewMetrics.formSubmissions.change > 0 ? '+' : ''}${overviewMetrics.formSubmissions.change}%` : '0%'}
+                    trend={overviewMetrics?.formSubmissions?.change ? overviewMetrics.formSubmissions.change > 0 ? 'up' : 'down' : 'down'}
+                    icon={<FormInput className="h-4 w-4" />}
+                    description="vs previous period"
+                    color="amber"
+                  />
+                </>
+              )}
+            </div>
 
-          <TabsContent value="overview" className="space-y-6">
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               <Card className="lg:col-span-2">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -357,9 +399,11 @@ export default function AnalyticsDashboard() {
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
+            </div>
+          )}
 
-          <TabsContent value="campaigns" className="space-y-6">
+          {activeTab === "campaigns" && (
+            <div className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Campaign Performance</CardTitle>
@@ -396,9 +440,11 @@ export default function AnalyticsDashboard() {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+            </div>
+          )}
 
-          <TabsContent value="flows" className="space-y-6">
+          {activeTab === "flows" && (
+            <div className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Flow Performance</CardTitle>
@@ -435,45 +481,64 @@ export default function AnalyticsDashboard() {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+            </div>
+          )}
 
-          <TabsContent value="forms" className="space-y-6">
+          {activeTab === "forms" && (
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Form Performance</CardTitle>
+                  <CardDescription>Detailed metrics for all forms</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <FormsTable dateRange={dateRange} />
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {activeTab === "segments" && (
+            <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Form Performance</CardTitle>
-                <CardDescription>Detailed metrics for all forms</CardDescription>
+                <CardTitle>Segment Performance</CardTitle>
+                <CardDescription>Detailed metrics for all segments</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="rounded-md border">
                   <div className="grid grid-cols-6 gap-4 p-4 font-medium border-b">
-                    <div className="col-span-2">Form Name</div>
-                    <div className="text-right">Views</div>
-                    <div className="text-right">Submissions</div>
-                    <div className="text-right">Submission Rate</div>
-                    <div className="text-right">Conversions</div>
+                    <div className="col-span-2">Segment Name</div>
+                    <div className="text-right">Members</div>
+                    <div className="text-right">Conversion Rate</div>
+                    <div className="text-right">Revenue</div>
+                    <div className="text-right">Growth</div>
                   </div>
                   <div className="divide-y">
-                    {isLoadingFormsData ? (
+                    {isLoadingSegments ? (
                       <div className="animate-pulse space-y-4">
                         {[1, 2, 3, 4, 5, 6].map((i) => (
                           <div key={i} className="h-16 bg-muted rounded-md" />
                         ))}
                       </div>
-                    ) : formsData?.map((form: Form) => (
-                      <div key={form.id} className="grid grid-cols-6 gap-4 p-4 items-center">
-                        <div className="col-span-2 font-medium">{form.name}</div>
-                        <div className="text-right">{form.views.toLocaleString()}</div>
-                        <div className="text-right">{form.submissions.toLocaleString()}</div>
-                        <div className="text-right">{form.submissionRate}%</div>
-                        <div className="text-right">{form.conversions.toLocaleString()}</div>
+                    ) : topSegments?.map((segment: TopSegmentData) => (
+                      <div key={segment.id} className="grid grid-cols-6 gap-4 p-4 items-center">
+                        <div className="col-span-2 font-medium">{segment.name}</div>
+                        <div className="text-right">{segment.count.toLocaleString()}</div>
+                        <div className="text-right">{segment.conversionRate}%</div>
+                        <div className="text-right">${segment.revenue.toLocaleString()}</div>
+                        <div className="text-right">
+                          <Badge variant={getBadgeVariant(segment.conversionRate)}>{segment.conversionRate}%</Badge>
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
