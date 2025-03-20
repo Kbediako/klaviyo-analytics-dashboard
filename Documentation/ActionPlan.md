@@ -154,6 +154,15 @@ This action plan outlines the steps needed to implement the Klaviyo Analytics Da
   - [x] Add dedicated endpoints for chart data in mock server
   - [x] Document visualization testing approaches
 
+- [ ] **Comprehensive End-to-End Testing**
+  - [x] Run end-to-end tests with mock data
+  - [x] Document test results and issues in TestResults.md
+  - [x] Verify all components render correctly with mock data
+  - [x] Test all interactive features (tabs, date ranges, etc.)
+  - [ ] Transition to live API testing after mock testing is complete
+  - [ ] Compare mock vs. live API results
+  - [x] Update documentation with testing findings
+
 ## Documentation & Deployment
 
 - [x] **API Documentation**
@@ -208,8 +217,52 @@ This action plan outlines the steps needed to implement the Klaviyo Analytics Da
   - [ ] Consider adding automated report generation
   - [ ] Plan email delivery of reports
 
+- [ ] **Predictive Analysis and Forecasting**
+  - [ ] Implement backend services for trend analysis
+  - [ ] Add revenue projection capabilities
+  - [ ] Create subscriber growth forecasting
+  - [ ] Develop visualization components for predictive data
+
+- [ ] **Chart Improvements**
+  - [ ] Fix date range filtering for Revenue Overview chart
+  - [ ] Ensure chart data reflects the selected time period
+  - [ ] Add more granular time period options (daily, weekly, monthly)
+
 ## Notes on Progress Tracking
 
 - Mark tasks as completed by changing `[ ]` to `[x]`
 - Add comments or notes under specific tasks as needed
 - Update this document as new requirements emerge
+- Make regular commits with descriptive messages following conventional commits pattern
+- For detailed implementation steps and timeline, refer to [NextSteps.md](./NextSteps.md)
+
+## Implementation Guidelines
+
+### Version Control Best Practices
+
+1. **Make Regular Commits**
+   - Commit code changes frequently with descriptive commit messages
+   - Follow the conventional commits pattern:
+     - `feat: add date range filtering to charts`
+     - `fix: resolve issue with API connection errors`
+     - `docs: update testing documentation`
+     - `test: add unit tests for date range filtering`
+   - Reference issue numbers in commit messages when applicable
+   - Keep commits focused on single logical changes
+
+2. **Branch Strategy**
+   - Create feature branches for new functionality
+   - Use bugfix branches for issue resolution
+   - Merge back to main branch after testing
+   - Delete branches after merging
+
+### Next Steps Reference
+
+For a comprehensive action plan with specific tasks, priorities, and timeline for implementing the identified enhancements and transitioning to live API testing, refer to the [NextSteps.md](./NextSteps.md) document.
+
+This detailed plan addresses:
+- Fixing date range filtering for charts
+- Preparing for live API testing
+- Implementing predictive analysis and forecasting
+- Enhancing chart functionality
+- Documentation and knowledge transfer
