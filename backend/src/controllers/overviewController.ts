@@ -23,7 +23,7 @@ export async function getOverview(req: Request, res: Response) {
     console.error('Error in overview controller:', error);
     res.status(500).json({
       error: 'Failed to fetch overview metrics',
-      message: error instanceof Error ? error.message : 'Unknown error',
+      message: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 }

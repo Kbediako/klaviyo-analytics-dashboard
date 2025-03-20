@@ -54,11 +54,11 @@ app.get('/api/health', (req: Request, res: Response) => {
 
 // Define cache TTLs (in seconds) for different endpoints
 const CACHE_TTLS = {
-  overview: 300,    // 5 minutes
-  campaigns: 600,   // 10 minutes
-  flows: 600,       // 10 minutes
-  forms: 600,       // 10 minutes
-  segments: 600,    // 10 minutes
+  overview: 600,    // 10 minutes (increased from 5 minutes)
+  campaigns: 1200,  // 20 minutes (increased from 10 minutes)
+  flows: 1200,      // 20 minutes (increased from 10 minutes)
+  forms: 1200,      // 20 minutes (increased from 10 minutes)
+  segments: 1200,   // 20 minutes (increased from 10 minutes)
 };
 
 // Apply default rate limiter to all API routes

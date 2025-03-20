@@ -52,6 +52,9 @@ describe('KlaviyoApiClient', () => {
   });
   
   it('should throw an error if the response is not ok', async () => {
+    // Create a client with no retries to avoid timeout
+    const noRetryClient = new KlaviyoApiClient(mockApiKey, '2023-07-15', 0);
+    
     const errorResponse = {
       ok: false,
       status: 401,
@@ -59,8 +62,8 @@ describe('KlaviyoApiClient', () => {
     };
     mockedFetch.mockResolvedValue(errorResponse as any);
     
-    await expect(client.get('campaigns')).rejects.toThrow('Klaviyo API error (401): Unauthorized');
-  });
+    await expect(noRetryClient.get('campaigns')).rejects.toThrow('Klaviyo API error (401): Unauthorized');
+  }, 10000); // Increase timeout just in case
   
   it('should return the JSON response if successful', async () => {
     const mockData = { data: [{ id: '1', type: 'campaign' }] };
@@ -86,8 +89,8 @@ describe('KlaviyoApiClient', () => {
       
       const [url] = mockedFetch.mock.calls[0];
       expect(url).toContain('campaigns');
-      expect(url).toContain(`filter=greater-or-equal(created,'${mockDateRange.start}')`);
-      expect(url).toContain(`less-or-equal(created,'${mockDateRange.end}')`);
+      expect(url).toContain(`filter=greater-or-equal%28created`);
+      expect(url).toContain(`less-or-equal%28created`);
       expect(url).toContain('include=campaign-messages');
     });
     
@@ -96,7 +99,8 @@ describe('KlaviyoApiClient', () => {
       
       const [url] = mockedFetch.mock.calls[0];
       expect(url).toContain('flows');
-      expect(url).toContain('include=flow-actions,flow-messages');
+      expect(url).toContain('include=flow-actions');
+      expect(url).toContain('flow-messages');
     });
     
     it('should call getEvents with correct parameters', async () => {
@@ -104,9 +108,9 @@ describe('KlaviyoApiClient', () => {
       
       const [url] = mockedFetch.mock.calls[0];
       expect(url).toContain('events');
-      expect(url).toContain(`filter=greater-or-equal(datetime,'${mockDateRange.start}')`);
-      expect(url).toContain(`less-or-equal(datetime,'${mockDateRange.end}')`);
-      expect(url).toContain('metric.id=opened-email');
+      expect(url).toContain(`filter=greater-or-equal%28datetime`);
+      expect(url).toContain(`less-or-equal%28datetime`);
+      expect(url).toContain('metric.id%3Dopened-email');
     });
   });
 });

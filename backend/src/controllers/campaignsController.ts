@@ -23,7 +23,7 @@ export async function getCampaigns(req: Request, res: Response) {
     console.error('Error in campaigns controller:', error);
     res.status(500).json({
       error: 'Failed to fetch campaigns data',
-      message: error instanceof Error ? error.message : 'Unknown error',
+      message: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 }

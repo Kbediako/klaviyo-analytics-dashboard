@@ -8,6 +8,81 @@ export interface DateRange {
 }
 
 /**
+ * Format a date for Klaviyo API in YYYY-MM-DD format
+ * 
+ * @param date The date to format
+ * @returns Formatted date string
+ */
+export function formatDateForKlaviyo(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Get a date range from a predefined option
+ * 
+ * @param option The predefined option (e.g., 'last-30-days')
+ * @param referenceDate Optional reference date (defaults to now)
+ * @returns Date range object
+ */
+export function getDateRangeFromOption(option: string, referenceDate: Date = new Date()): { start: Date; end: Date } {
+  const now = referenceDate;
+  let start: Date;
+  let end: Date = new Date(now);
+  
+  // Set end time to end of day
+  end.setHours(23, 59, 59, 999);
+  
+  switch (option) {
+    case 'last-7-days':
+      start = new Date(now);
+      start.setDate(start.getDate() - 7);
+      start.setHours(0, 0, 0, 0);
+      break;
+      
+    case 'last-30-days':
+      start = new Date(now);
+      start.setDate(start.getDate() - 30);
+      start.setHours(0, 0, 0, 0);
+      break;
+      
+    case 'last-90-days':
+      start = new Date(now);
+      start.setDate(start.getDate() - 90);
+      start.setHours(0, 0, 0, 0);
+      break;
+      
+    case 'this-month':
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
+      start.setHours(0, 0, 0, 0);
+      break;
+      
+    case 'last-month':
+      start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      start.setHours(0, 0, 0, 0);
+      end = new Date(now.getFullYear(), now.getMonth(), 0);
+      end.setHours(23, 59, 59, 999);
+      break;
+      
+    case 'this-year':
+      start = new Date(now.getFullYear(), 0, 1);
+      start.setHours(0, 0, 0, 0);
+      break;
+      
+    default:
+      // Default to last 30 days
+      start = new Date(now);
+      start.setDate(start.getDate() - 30);
+      start.setHours(0, 0, 0, 0);
+  }
+  
+  return { start, end };
+}
+
+/**
  * Parse a date range string into start and end dates
  * Supports formats:
  * - "last-30-days", "last-7-days", "last-90-days"
@@ -56,7 +131,8 @@ export function parseDateRange(dateRangeStr: string = 'last-30-days'): DateRange
  * @returns A filter string for Klaviyo API
  */
 export function generateKlaviyoDateFilter(field: string, dateRange: DateRange): string {
-  return `greater-or-equal(${field},'${dateRange.start}'),less-or-equal(${field},'${dateRange.end}')`;
+  // Remove quotes around date values as per Klaviyo API requirements
+  return `greater-or-equal(${field},${dateRange.start}),less-or-equal(${field},${dateRange.end})`;
 }
 
 /**

@@ -23,7 +23,7 @@ export async function getForms(req: Request, res: Response) {
     console.error('Error in forms controller:', error);
     res.status(500).json({
       error: 'Failed to fetch forms data',
-      message: error instanceof Error ? error.message : 'Unknown error',
+      message: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 }

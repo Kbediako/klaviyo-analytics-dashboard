@@ -93,6 +93,47 @@ The frontend is already set up with Next.js and all necessary UI components. To 
 
 The frontend will be available at http://localhost:3000.
 
+### Running the Full Application
+
+To run the complete application, you need to start both the backend and frontend servers:
+
+#### Option 1: Start both servers with a single command
+
+```bash
+# From the project root
+npm run dev:all
+```
+
+This will start both the backend server on port 3001 and the frontend server on port 3000 concurrently.
+
+#### Option 2: Start servers separately
+
+1. **Start the backend server first**:
+   ```bash
+   cd backend
+   npm run dev
+   ```
+
+2. **In a separate terminal, start the frontend**:
+   ```bash
+   # From the project root
+   npm run dev
+   ```
+
+3. **Verify the backend is running** by visiting http://localhost:3001/api/health in your browser. You should see a JSON response with status "OK".
+
+4. **Access the dashboard** at http://localhost:3000
+
+### Troubleshooting Connection Issues
+
+If you see "Failed to fetch" errors in the frontend:
+
+1. Ensure the backend server is running on port 3001
+2. Check that your Klaviyo API key is correctly set in the backend's `.env` file
+3. Verify the backend is accessible by visiting http://localhost:3001/api/health
+4. Check browser console for specific error messages
+5. If using a custom API URL, ensure NEXT_PUBLIC_API_URL is set correctly in your frontend environment
+
 ## API Endpoints
 
 | Endpoint | Description | Query Parameters |

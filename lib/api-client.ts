@@ -17,16 +17,43 @@ const defaultOptions: RequestInit = {
   },
 };
 
+// Simple in-memory cache
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+const cache = new Map<string, CacheEntry<any>>();
+
+// Cache TTL in milliseconds (5 minutes)
+const CACHE_TTL = 5 * 60 * 1000;
+
 /**
- * Generic function to fetch data from the API
+ * Generic function to fetch data from the API with caching
  * 
  * @param endpoint API endpoint path
  * @param options Fetch options
+ * @param skipCache Whether to skip the cache and force a fresh request
  * @returns Promise with the response data
  */
-async function fetchFromAPI<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+async function fetchFromAPI<T>(
+  endpoint: string, 
+  options: RequestInit = {}, 
+  skipCache: boolean = false
+): Promise<T> {
+  const url = `${API_BASE_URL}${endpoint}`;
+  const cacheKey = `${url}:${JSON.stringify(options)}`;
+  
+  // Check cache first if not skipping cache
+  if (!skipCache) {
+    const cachedEntry = cache.get(cacheKey);
+    if (cachedEntry && (Date.now() - cachedEntry.timestamp) < CACHE_TTL) {
+      console.log(`Using cached data for ${endpoint}`);
+      return cachedEntry.data as T;
+    }
+  }
+  
   try {
-    const url = `${API_BASE_URL}${endpoint}`;
     const response = await fetch(url, {
       ...defaultOptions,
       ...options,
@@ -37,7 +64,15 @@ async function fetchFromAPI<T>(endpoint: string, options: RequestInit = {}): Pro
       throw new Error(errorData.message || `API error: ${response.status} ${response.statusText}`);
     }
 
-    return await response.json() as T;
+    const data = await response.json() as T;
+    
+    // Store in cache
+    cache.set(cacheKey, {
+      data,
+      timestamp: Date.now()
+    });
+    
+    return data;
   } catch (error) {
     console.error('API request failed:', error);
     // We'll integrate toast notifications later
@@ -47,6 +82,26 @@ async function fetchFromAPI<T>(endpoint: string, options: RequestInit = {}): Pro
     //   variant: 'destructive',
     // });
     throw error;
+  }
+}
+
+/**
+ * Clear the entire cache or a specific endpoint
+ * 
+ * @param endpoint Optional endpoint to clear from cache
+ */
+export function clearCache(endpoint?: string): void {
+  if (endpoint) {
+    // Clear specific endpoint
+    const prefix = `${API_BASE_URL}${endpoint}`;
+    for (const key of cache.keys()) {
+      if (key.startsWith(prefix)) {
+        cache.delete(key);
+      }
+    }
+  } else {
+    // Clear entire cache
+    cache.clear();
   }
 }
 

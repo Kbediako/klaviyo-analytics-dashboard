@@ -1,4 +1,5 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { clearCache } from '../lib/api-client';
 
 /**
  * Date range options for the dashboard
@@ -181,6 +182,29 @@ function getPreviousPeriodDateRange(dateRange: DateRange): DateRange {
 }
 
 /**
+ * Custom hook for debouncing values
+ * 
+ * @param value Value to debounce
+ * @param delay Delay in milliseconds
+ * @returns Debounced value
+ */
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+    
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [value, delay]);
+  
+  return debouncedValue;
+}
+
+/**
  * Custom hook for date range selection
  * 
  * @param defaultOption Default date range option
@@ -192,6 +216,9 @@ export function useDateRange(defaultOption: DateRangeOption = 'last-30-days') {
     startDate: null,
     endDate: null,
   });
+  
+  // Track previous date range param for cache clearing
+  const prevDateRangeParamRef = useRef<string | null>(null);
   
   // Get current date range based on selected option
   const dateRange = useMemo(() => {
@@ -208,23 +235,36 @@ export function useDateRange(defaultOption: DateRangeOption = 'last-30-days') {
     return getDateRangeLabel(dateRange);
   }, [dateRange]);
   
-  // Handle date range option change
+  // Handle date range option change with debouncing
   const handleDateRangeChange = useCallback((option: DateRangeOption) => {
     setSelectedOption(option);
   }, []);
   
-  // Handle custom date range change
+  // Handle custom date range change with debouncing
   const handleCustomDateRangeChange = useCallback((range: CustomDateRange) => {
     setCustomDateRange(range);
     setSelectedOption('custom');
   }, []);
   
   // Get date range parameter for API requests
-  const dateRangeParam = useMemo(() => {
+  const rawDateRangeParam = useMemo(() => {
     return selectedOption === 'custom' 
       ? `${dateRange.start},${dateRange.end}` 
       : selectedOption;
   }, [selectedOption, dateRange]);
+  
+  // Debounce the date range parameter to prevent rapid API requests
+  const dateRangeParam = useDebounce(rawDateRangeParam, 500);
+  
+  // Clear cache when date range changes
+  useEffect(() => {
+    if (prevDateRangeParamRef.current && prevDateRangeParamRef.current !== dateRangeParam) {
+      // Clear cache for all endpoints when date range changes
+      clearCache();
+    }
+    
+    prevDateRangeParamRef.current = dateRangeParam;
+  }, [dateRangeParam]);
   
   return {
     selectedOption,

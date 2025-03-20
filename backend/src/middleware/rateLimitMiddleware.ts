@@ -24,26 +24,30 @@ export function createRateLimiter(
 
 /**
  * Default rate limiter for API endpoints
- * Limits to 60 requests per minute
+ * Limits to 120 requests per minute
  */
-export const defaultRateLimiter = createRateLimiter();
+export const defaultRateLimiter = createRateLimiter(
+  60 * 1000, // 1 minute
+  120, // 120 requests per minute
+  'Too many requests, please try again later.'
+);
 
 /**
  * Strict rate limiter for expensive API endpoints
- * Limits to 20 requests per minute
+ * Limits to 40 requests per minute
  */
 export const strictRateLimiter = createRateLimiter(
   60 * 1000, // 1 minute
-  20, // 20 requests per minute
+  40, // 40 requests per minute (increased from 20)
   'Rate limit exceeded for this endpoint. Please try again later.'
 );
 
 /**
  * Very strict rate limiter for the most expensive API endpoints
- * Limits to 5 requests per minute
+ * Limits to 10 requests per minute
  */
 export const veryStrictRateLimiter = createRateLimiter(
   60 * 1000, // 1 minute
-  5, // 5 requests per minute
+  10, // 10 requests per minute (increased from 5)
   'Rate limit exceeded for this resource-intensive endpoint. Please try again later.'
 );

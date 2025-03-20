@@ -93,6 +93,7 @@ This action plan outlines the steps needed to implement the Klaviyo Analytics Da
   - [x] Research Klaviyo API rate limits
   - [x] Implement request throttling to avoid rate limits
   - [x] Add queuing mechanism for large batch requests
+  - [x] Adjust rate limits to accommodate frontend concurrent requests
 
 ## Frontend Integration
 
@@ -100,11 +101,13 @@ This action plan outlines the steps needed to implement the Klaviyo Analytics Da
   - [x] Create API client functions for each endpoint
   - [x] Add error handling and loading states
   - [x] Implement date range selection logic
+  - [x] Add client-side caching to reduce API requests
 
 - [x] **State Management**
   - [x] Setup state management for dashboard data
   - [x] Implement data fetching hooks
   - [x] Add period comparison calculations
+  - [x] Implement lazy loading for tab content
 
 - [x] **Dashboard Components**
   - [x] Connect overview metrics to API
@@ -112,11 +115,14 @@ This action plan outlines the steps needed to implement the Klaviyo Analytics Da
   - [x] Connect flows section to backend data
   - [x] Link forms metrics to API
   - [x] Add segments data if needed
+  - [x] Keep metric cards visible across all tabs
+  - [x] Add data visualizations to overview tab
 
 - [x] **Loading & Error States**
   - [x] Implement skeleton loaders for data fetching
   - [x] Add error handling UI components
   - [x] Create retry mechanisms for failed requests
+  - [x] Add cache status indicators
 
 ## Testing & Quality Assurance
 

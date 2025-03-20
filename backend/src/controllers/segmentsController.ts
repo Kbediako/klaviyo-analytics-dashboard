@@ -23,7 +23,7 @@ export async function getSegments(req: Request, res: Response) {
     console.error('Error in segments controller:', error);
     res.status(500).json({
       error: 'Failed to fetch segments data',
-      message: error instanceof Error ? error.message : 'Unknown error',
+      message: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 }

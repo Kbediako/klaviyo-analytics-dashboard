@@ -23,7 +23,7 @@ export async function getFlows(req: Request, res: Response) {
     console.error('Error in flows controller:', error);
     res.status(500).json({
       error: 'Failed to fetch flows data',
-      message: error instanceof Error ? error.message : 'Unknown error',
+      message: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 }

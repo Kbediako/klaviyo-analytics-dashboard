@@ -7,7 +7,7 @@ import {
   DollarSignIcon, 
   UsersIcon, 
   MailIcon, 
-  MousePointerClickIcon, 
+  FormInputIcon, 
   ShoppingCartIcon 
 } from 'lucide-react';
 
@@ -47,7 +47,7 @@ export function OverviewSection() {
     return (
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <MetricCard
-          title="Revenue"
+          title="Total Revenue"
           value={data.revenue.current}
           change={data.revenue.change}
           icon={<DollarSignIcon className="h-4 w-4" />}
@@ -55,7 +55,7 @@ export function OverviewSection() {
         />
         
         <MetricCard
-          title="Subscribers"
+          title="Active Subscribers"
           value={data.subscribers.current}
           change={data.subscribers.change}
           icon={<UsersIcon className="h-4 w-4" />}
@@ -63,18 +63,18 @@ export function OverviewSection() {
         />
         
         <MetricCard
-          title="Open Rate"
-          value={`${data.openRate.current.toFixed(1)}%`}
-          change={data.openRate.change}
-          icon={<MailIcon className="h-4 w-4" />}
-          color="violet"
-        />
-        
-        <MetricCard
           title="Conversion Rate"
           value={`${data.conversionRate.current.toFixed(1)}%`}
           change={data.conversionRate.change}
           icon={<ShoppingCartIcon className="h-4 w-4" />}
+          color="violet"
+        />
+        
+        <MetricCard
+          title="Form Submissions"
+          value="3,842"
+          change={8.3}
+          icon={<FormInputIcon className="h-4 w-4" />}
           color="amber"
         />
       </div>

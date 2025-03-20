@@ -1,17 +1,32 @@
 import klaviyoApiClient from './klaviyoApiClient';
-import { DateRange, getPreviousPeriodDateRange, calculatePercentageChange } from '../utils/dateUtils';
+import { DateRange, getPreviousPeriodDateRange } from '../utils/dateUtils';
 
 export interface OverviewMetrics {
-  totalRevenue: number;
-  activeSubscribers: number;
-  conversionRate: number;
-  formSubmissions: number;
-  periodComparison: {
-    totalRevenue: string;
-    activeSubscribers: string;
-    conversionRate: string;
-    formSubmissions: string;
+  revenue: {
+    current: number;
+    previous: number;
+    change: number;
   };
+  subscribers: {
+    current: number;
+    previous: number;
+    change: number;
+  };
+  openRate: {
+    current: number;
+    previous: number;
+    change: number;
+  };
+  conversionRate: {
+    current: number;
+    previous: number;
+    change: number;
+  };
+  channels: {
+    name: string;
+    value: number;
+    color: string;
+  }[];
 }
 
 /**
@@ -24,116 +39,84 @@ export async function getOverviewMetrics(dateRange: DateRange): Promise<Overview
   // Get previous period for comparison
   const previousPeriod = getPreviousPeriodDateRange(dateRange);
   
-  // Get current period metrics
-  const currentMetrics = await fetchPeriodMetrics(dateRange);
-  
-  // Get previous period metrics for comparison
-  const previousMetrics = await fetchPeriodMetrics(previousPeriod);
-  
-  // Calculate period comparison percentages
-  const periodComparison = {
-    totalRevenue: calculatePercentageChange(currentMetrics.totalRevenue, previousMetrics.totalRevenue),
-    activeSubscribers: calculatePercentageChange(currentMetrics.activeSubscribers, previousMetrics.activeSubscribers),
-    conversionRate: calculatePercentageChange(currentMetrics.conversionRate, previousMetrics.conversionRate),
-    formSubmissions: calculatePercentageChange(currentMetrics.formSubmissions, previousMetrics.formSubmissions),
-  };
-  
-  return {
-    ...currentMetrics,
-    periodComparison,
-  };
-}
-
-/**
- * Fetch metrics for a specific period
- * 
- * @param dateRange Date range to fetch metrics for
- * @returns Metrics for the period
- */
-async function fetchPeriodMetrics(dateRange: DateRange): Promise<Omit<OverviewMetrics, 'periodComparison'>> {
   try {
-    // In a real implementation, these would be parallel requests to Klaviyo API
-    // For now, we'll use placeholder logic
+    // For now, return mock data instead of making API calls
+    // This will allow the frontend to work without valid API responses
     
-    // 1. Get total revenue from "Placed Order" events
-    const revenueEvents = await klaviyoApiClient.getEvents(dateRange, 'metric.id=placed-order');
-    const totalRevenue = calculateTotalRevenue(revenueEvents);
+    // Current period values
+    const currentRevenue = 42582;
+    const currentSubscribers = 24853;
+    const currentOpenRate = 32.5;
+    const currentConversionRate = 18.5;
     
-    // 2. Get active subscribers count
-    const profiles = await klaviyoApiClient.getProfiles(dateRange);
-    const activeSubscribers = countActiveSubscribers(profiles);
+    // Previous period values (slightly lower to show positive change)
+    const previousRevenue = 38750;
+    const previousSubscribers = 22480;
+    const previousOpenRate = 29.8;
+    const previousConversionRate = 16.2;
     
-    // 3. Calculate conversion rate from email opens to purchases
-    const openEvents = await klaviyoApiClient.getEvents(dateRange, 'metric.id=opened-email');
-    const conversionRate = calculateConversionRate(openEvents, revenueEvents);
+    // Calculate percentage changes
+    const revenueChange = ((currentRevenue - previousRevenue) / previousRevenue) * 100;
+    const subscribersChange = ((currentSubscribers - previousSubscribers) / previousSubscribers) * 100;
+    const openRateChange = ((currentOpenRate - previousOpenRate) / previousOpenRate) * 100;
+    const conversionRateChange = ((currentConversionRate - previousConversionRate) / previousConversionRate) * 100;
     
-    // 4. Get form submissions
-    const formEvents = await klaviyoApiClient.getEvents(dateRange, 'metric.id=submitted-form');
-    const formSubmissions = countFormSubmissions(formEvents);
+    // Mock channel distribution data
+    const channels = [
+      { name: 'Email', value: 68, color: 'blue' },
+      { name: 'SMS', value: 18, color: 'violet' },
+      { name: 'Push', value: 14, color: 'amber' }
+    ];
     
     return {
-      totalRevenue,
-      activeSubscribers,
-      conversionRate,
-      formSubmissions,
+      revenue: {
+        current: currentRevenue,
+        previous: previousRevenue,
+        change: revenueChange
+      },
+      subscribers: {
+        current: currentSubscribers,
+        previous: previousSubscribers,
+        change: subscribersChange
+      },
+      openRate: {
+        current: currentOpenRate,
+        previous: previousOpenRate,
+        change: openRateChange
+      },
+      conversionRate: {
+        current: currentConversionRate,
+        previous: previousConversionRate,
+        change: conversionRateChange
+      },
+      channels
     };
   } catch (error) {
     console.error('Error fetching overview metrics:', error);
+    
     // Return default values in case of error
     return {
-      totalRevenue: 0,
-      activeSubscribers: 0,
-      conversionRate: 0,
-      formSubmissions: 0,
+      revenue: {
+        current: 0,
+        previous: 0,
+        change: 0
+      },
+      subscribers: {
+        current: 0,
+        previous: 0,
+        change: 0
+      },
+      openRate: {
+        current: 0,
+        previous: 0,
+        change: 0
+      },
+      conversionRate: {
+        current: 0,
+        previous: 0,
+        change: 0
+      },
+      channels: []
     };
   }
-}
-
-/**
- * Calculate total revenue from order events
- * 
- * @param events Order events from Klaviyo
- * @returns Total revenue
- */
-function calculateTotalRevenue(events: any): number {
-  // In a real implementation, we would extract revenue from each event
-  // For now, return a placeholder value
-  return 42582;
-}
-
-/**
- * Count active subscribers from profiles
- * 
- * @param profiles Profiles from Klaviyo
- * @returns Number of active subscribers
- */
-function countActiveSubscribers(profiles: any): number {
-  // In a real implementation, we would count profiles with active subscription status
-  // For now, return a placeholder value
-  return 24853;
-}
-
-/**
- * Calculate conversion rate from email opens to purchases
- * 
- * @param openEvents Email open events
- * @param purchaseEvents Purchase events
- * @returns Conversion rate as a percentage
- */
-function calculateConversionRate(openEvents: any, purchaseEvents: any): number {
-  // In a real implementation, we would calculate the ratio of purchases to opens
-  // For now, return a placeholder value
-  return 18.5;
-}
-
-/**
- * Count form submissions
- * 
- * @param formEvents Form submission events
- * @returns Number of form submissions
- */
-function countFormSubmissions(formEvents: any): number {
-  // In a real implementation, we would count form submission events
-  // For now, return a placeholder value
-  return 3842;
 }

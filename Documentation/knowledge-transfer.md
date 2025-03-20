@@ -88,10 +88,12 @@ To avoid hitting Klaviyo API rate limits, the backend implements rate limiting:
 
 - **Implementation**: `rateLimitMiddleware.ts`
 - **Limits**: 
-  - Default: 60 requests per minute
-  - Strict: 20 requests per minute
-  - Very Strict: 5 requests per minute
+  - Default: 120 requests per minute (increased from 60)
+  - Strict: 40 requests per minute (increased from 20)
+  - Very Strict: 10 requests per minute (increased from 5)
 - **Headers**: Returns standard rate limit headers
+
+> **Note**: The rate limits were increased to accommodate the frontend's concurrent API requests. The original limits were too restrictive and caused "429 too many requests" errors when multiple components loaded simultaneously.
 
 ### Retry Mechanism
 
@@ -296,21 +298,66 @@ This warning indicates that some asynchronous operations (like timers, network r
 - Use the `/api/health` endpoint to verify the API is running
 - Examine the response from Klaviyo API for error details
 
-## Frontend-Backend Integration
+## Frontend Implementation
 
-### Connection Architecture
+### UI Architecture
+
+The frontend follows a component-based architecture using React and Next.js:
+
+- **Dashboard Layout**: The main dashboard component that orchestrates the overall UI
+- **Metric Cards**: Reusable components for displaying KPIs with trends
+- **Data Tables**: Components for displaying tabular data (campaigns, flows, forms, segments)
+- **Charts and Visualizations**: Components for data visualization (revenue charts, distribution charts)
+- **Navigation**: Tab-based navigation for switching between different views
+
+### Key Frontend Components
+
+1. **Dashboard Component**: The main container component that:
+   - Manages the overall layout and state
+   - Keeps metric cards visible across all tabs
+   - Handles tab navigation
+   - Provides consistent header with search and filters
+
+2. **Overview Section**: Always visible section that:
+   - Displays key metrics (revenue, subscribers, conversion rate, form submissions)
+   - Shows period-over-period changes
+   - Uses conditional styling for positive/negative trends
+
+3. **Tab Content**: Content specific to each tab:
+   - **Overview**: Charts and top performers for each category
+   - **Campaigns**: Detailed campaign performance metrics
+   - **Flows**: Automated flow performance data
+   - **Forms**: Form submission and conversion metrics
+   - **Segments**: Segment membership and performance data
+
+### Client-Side Caching
+
+The frontend implements client-side caching to reduce API requests and improve performance:
+
+- **Implementation**: `lib/api-client.ts` includes a caching mechanism
+- **Cache Keys**: Based on endpoint path and query parameters
+- **TTL**: 5-minute default cache lifetime
+- **Cache Clearing**: 
+  - Automatic clearing when date range changes
+  - Manual clearing via "Refresh Data" button
+  - Automatic expiration based on TTL
+
+### Frontend-Backend Integration
+
+#### Connection Architecture
 
 - **Frontend API Client**: The frontend uses a centralized API client (`lib/api-client.ts`) to communicate with the backend
 - **Backend Endpoints**: The backend exposes RESTful endpoints at `http://localhost:3001/api/*`
 - **Data Flow**: Frontend components use custom hooks that fetch data from the backend API
+- **Lazy Loading**: Components only fetch data when they are rendered, reducing concurrent API requests
 
-### Common Integration Issues
+#### Common Integration Issues
 
 - **Connection Failures**: "Failed to fetch" errors occur when the frontend cannot connect to the backend
 - **CORS Issues**: Cross-Origin Resource Sharing is configured in the backend but may need adjustments in some environments
 - **Environment Variables**: The frontend uses `NEXT_PUBLIC_API_URL` to configure the API base URL (defaults to `http://localhost:3001/api`)
 
-### Running the Full Application
+#### Running the Full Application
 
 To properly run the full application:
 
@@ -327,7 +374,7 @@ To properly run the full application:
 
 3. Access the application at `http://localhost:3000`
 
-### Troubleshooting Integration Issues
+#### Troubleshooting Integration Issues
 
 - **Backend Not Running**: Ensure the backend server is running on port 3001
 - **API Connectivity**: Verify the backend is accessible by visiting `http://localhost:3001/api/health`
