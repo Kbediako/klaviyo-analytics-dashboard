@@ -5,6 +5,8 @@ import dotenv from 'dotenv';
 import { cacheMiddleware } from './middleware/cacheMiddleware';
 import { defaultRateLimiter, strictRateLimiter } from './middleware/rateLimitMiddleware';
 import { initEnv } from './utils/envValidator';
+import { syncScheduler } from './scheduler';
+import { logger } from './utils/logger';
 
 // Load environment variables
 dotenv.config();
@@ -66,7 +68,11 @@ app.use('/api', defaultRateLimiter);
 
 // Register routes with caching
 app.use('/api/overview', cacheMiddleware(CACHE_TTLS.overview), overviewRoutes);
+
+// Special handling for campaigns routes to exclude sync endpoint from caching
+app.use('/api/campaigns/sync', campaignsRoutes);
 app.use('/api/campaigns', cacheMiddleware(CACHE_TTLS.campaigns), campaignsRoutes);
+
 app.use('/api/flows', cacheMiddleware(CACHE_TTLS.flows), flowsRoutes);
 app.use('/api/forms', cacheMiddleware(CACHE_TTLS.forms), formsRoutes);
 app.use('/api/segments', cacheMiddleware(CACHE_TTLS.segments), segmentsRoutes);
@@ -77,7 +83,15 @@ app.use('/api/health', strictRateLimiter);
 // Start server
 if (process.env.NODE_ENV !== 'test') {
   app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
+    logger.info(`Server running on port ${port}`);
+    
+    // Start the sync scheduler
+    try {
+      syncScheduler.start();
+      logger.info('Sync scheduler started successfully');
+    } catch (error) {
+      logger.error('Failed to start sync scheduler:', error);
+    }
   });
 }
 

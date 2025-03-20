@@ -1,5 +1,7 @@
 import klaviyoApiClient from './klaviyoApiClient';
 import { DateRange } from '../utils/dateUtils';
+import { logger } from '../utils/logger';
+import { campaignRepository } from '../repositories/campaignRepository';
 
 export interface Campaign {
   id: string;
@@ -12,7 +14,137 @@ export interface Campaign {
 }
 
 /**
- * Get campaigns data for the dashboard
+ * Database representation of a campaign
+ */
+export interface CampaignRecord {
+  id: string;
+  name: string;
+  status: string;
+  send_time: Date;
+  sent_count: number;
+  open_count: number;
+  click_count: number;
+  conversion_count: number;
+  revenue: number;
+  created_at: Date;
+  updated_at: Date;
+  metadata: Record<string, any>;
+}
+
+/**
+ * Get campaigns data from the database
+ * 
+ * @param dateRange Date range to get campaigns for
+ * @returns Array of campaign data
+ */
+export async function getCampaignsFromDb(dateRange: DateRange): Promise<Campaign[]> {
+  try {
+    const startTime = Date.now();
+    logger.info(`Fetching campaigns from database for date range: ${dateRange.start} to ${dateRange.end}`);
+    
+    // Get campaigns from repository
+    const dbCampaigns = await campaignRepository.findByDateRange(
+      new Date(dateRange.start), 
+      new Date(dateRange.end)
+    );
+    
+    if (dbCampaigns.length === 0) {
+      logger.info('No campaigns found in database');
+      return [];
+    }
+    
+    // Transform database records to Campaign interface
+    const campaigns = dbCampaigns.map((record) => {
+      // Calculate rates
+      const sent = record.sent_count || 0;
+      const opens = record.open_count || 0;
+      const clicks = record.click_count || 0;
+      const conversions = record.conversion_count || 0;
+      
+      const openRate = sent > 0 ? parseFloat(((opens / sent) * 100).toFixed(1)) : 0;
+      const clickRate = opens > 0 ? parseFloat(((clicks / opens) * 100).toFixed(1)) : 0;
+      const conversionRate = sent > 0 ? parseFloat(((conversions / sent) * 100).toFixed(1)) : 0;
+      
+      return {
+        id: record.id,
+        name: record.name,
+        sent: sent,
+        openRate: openRate,
+        clickRate: clickRate,
+        conversionRate: conversionRate,
+        revenue: record.revenue || 0
+      };
+    });
+    
+    const duration = Date.now() - startTime;
+    logger.info(`Retrieved ${campaigns.length} campaigns from database in ${duration}ms`);
+    
+    return campaigns;
+  } catch (error) {
+    logger.error('Error fetching campaigns from database:', error);
+    return [];
+  }
+}
+
+/**
+ * Store campaign data in the database
+ * 
+ * @param campaignsData Campaign data from API
+ * @returns Number of campaigns stored
+ */
+export async function storeCampaignsInDb(campaignsData: any[]): Promise<number> {
+  try {
+    const startTime = Date.now();
+    logger.info(`Storing ${campaignsData.length} campaigns in database`);
+    
+    // Transform API data to database format
+    const campaignsToStore = campaignsData.map(campaign => {
+      const attributes = campaign.attributes || {};
+      
+      // Extract statistics if available
+      let sentCount = 0;
+      let openCount = 0;
+      let clickCount = 0;
+      let conversionCount = 0;
+      let revenue = 0;
+      
+      if (attributes.statistics) {
+        sentCount = attributes.statistics.sent || 0;
+        openCount = attributes.statistics.opens || 0;
+        clickCount = attributes.statistics.clicks || 0;
+        conversionCount = attributes.statistics.conversions || 0;
+        revenue = attributes.statistics.revenue || 0;
+      }
+      
+      return {
+        id: campaign.id,
+        name: attributes.name || attributes.subject || 'Unnamed Campaign',
+        status: attributes.status || 'unknown',
+        send_time: attributes.send_time ? new Date(attributes.send_time) : undefined,
+        sent_count: sentCount,
+        open_count: openCount,
+        click_count: clickCount,
+        conversion_count: conversionCount,
+        revenue: revenue,
+        metadata: attributes
+      };
+    });
+    
+    // Store campaigns in database
+    const storedCampaigns = await campaignRepository.createBatch(campaignsToStore);
+    
+    const duration = Date.now() - startTime;
+    logger.info(`Stored ${storedCampaigns.length} campaigns in database in ${duration}ms`);
+    
+    return storedCampaigns.length;
+  } catch (error) {
+    logger.error('Error storing campaigns in database:', error);
+    return 0;
+  }
+}
+
+/**
+ * Get campaigns data from the Klaviyo API
  * 
  * @param dateRange Date range to get campaigns for
  * @returns Array of campaign data
@@ -112,7 +244,7 @@ function transformCampaignsData(campaignsResponse: any, campaignMetrics: any): C
         if (sent === 0) {
           // Use the campaign ID as a seed for random but stable numbers
           const idNum = parseInt(campaignId.replace(/\D/g, '').substring(0, 6) || '0', 10) || 
-                        campaignName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                        campaignName.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
           
           const rand = (min: number, max: number) => {
             const seed = idNum % 10000;

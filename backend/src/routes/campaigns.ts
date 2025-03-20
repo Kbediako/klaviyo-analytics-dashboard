@@ -1,5 +1,5 @@
 import express from 'express';
-import { getCampaigns } from '../controllers/campaignsController';
+import { getCampaigns, syncCampaigns } from '../controllers/campaignsController';
 
 const router = express.Router();
 
@@ -10,5 +10,12 @@ const router = express.Router();
  * @access  Public
  */
 router.get('/', getCampaigns);
+
+/**
+ * @route   POST /api/campaigns/sync
+ * @desc    Manually trigger a sync of campaigns data
+ * @access  Public
+ */
+router.post('/sync', syncCampaigns);
 
 export default router;

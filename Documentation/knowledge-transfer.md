@@ -40,6 +40,8 @@ See [Architecture Documentation](./architecture/README.md) for detailed informat
 
 ### Backend Services
 - `klaviyoApiClient.ts`: Handles Klaviyo API communication
+- `dataSyncService.ts`: Manages data synchronization between Klaviyo API and local database
+- `scheduler/index.ts`: Schedules regular data synchronization jobs
 - Service layer for each data type (campaigns, flows, forms)
 - Data transformation and caching logic
 
@@ -47,6 +49,8 @@ See [Architecture Documentation](./architecture/README.md) for detailed informat
 - `database/index.ts`: Database connection manager with connection pooling
 - `repositories/metricRepository.ts`: Repository for Klaviyo metrics
 - `repositories/eventRepository.ts`: Repository for Klaviyo events
+- `repositories/profileRepository.ts`: Repository for Klaviyo profiles
+- `repositories/campaignRepository.ts`: Repository for Klaviyo campaigns
 - TimescaleDB for time-series data optimization
 - Migration scripts for database schema management
 
@@ -64,6 +68,7 @@ See [Architecture Documentation](./architecture/README.md) for detailed informat
    - Write tests first (TDD approach)
    - Implement feature
    - Open PR with tests and documentation
+   - Commit at key milestones and keep documentation up to date
 
 2. **Testing**
    - Unit tests with Jest
@@ -182,6 +187,8 @@ const metric = await metricRepository.create({
 2. Implement transaction handling for multi-step operations
 3. Use time-series functions for time-based analytics
 4. Implement proper error handling
+5. Use the database-first approach in controllers (check database before API)
+6. Trigger background sync for future requests
 
 ### Implementing New Features
 1. Review architecture documentation
@@ -261,6 +268,33 @@ See [Architecture Documentation](./architecture/README.md) for detailed implemen
 4. Use the provided code examples and configurations
 5. Run tests at each step
 6. Document any deviations or improvements
+7. Commit code at key milestones
+8. Keep documentation up to date with implementation
+
+### Running the Implementation
+
+1. Start the database:
+   ```bash
+   ./start-db.sh
+   ```
+
+2. Run database migrations:
+   ```bash
+   ./run-migrations.sh
+   ```
+
+3. Start the backend server:
+   ```bash
+   cd backend
+   npm run dev
+   ```
+
+4. Start the frontend:
+   ```bash
+   npm run dev
+   ```
+
+5. Access the dashboard at http://localhost:3000
 
 ## Risk Management
 
