@@ -118,6 +118,8 @@ Environment validation is performed on startup to ensure all required variables 
 The backend follows a test-first development approach:
 
 - **Unit Tests**: For services, controllers, and utilities
+- **Integration Tests**: For API endpoints with various parameters
+- **End-to-End Tests**: For frontend-backend integration
 - **Mocking**: External dependencies are mocked
 - **Coverage**: Aim for >80% test coverage
 
@@ -127,6 +129,91 @@ The backend follows a test-first development approach:
 cd backend
 npm test
 ```
+
+### End-to-End Testing
+
+The project includes comprehensive end-to-end tests that verify the integration between frontend and backend:
+
+1. **Test Files**:
+   - `frontend/public/e2e-test.js`: Contains the test cases
+   - `frontend/public/e2e-test-runner.html`: Interactive test runner UI
+
+2. **Test Features**:
+   - Backend connectivity verification
+   - Date range selection functionality
+   - Dashboard component rendering
+   - Tab navigation
+   - Error handling
+   - API integration
+
+3. **Running E2E Tests**:
+   ```bash
+   # Start the backend
+   cd backend
+   npm run dev
+   
+   # In a separate terminal, start the frontend
+   cd ..
+   npm run dev
+   
+   # Open the test runner in your browser
+   open http://localhost:3000/e2e-test-runner.html
+   ```
+
+4. **Test Modes**:
+   - **Mock Mode**: Tests run with mock data (no backend required)
+   - **E2E Mode**: Tests run against the actual backend API
+
+### Handling Jest Open Handles
+
+When running backend tests, you might encounter the following warning:
+
+```
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?
+```
+
+This warning indicates that some asynchronous operations (like timers, network requests, or database connections) are not being properly closed after the tests finish. To address this:
+
+1. **Identify open handles**: Run tests with the `--detectOpenHandles` flag to identify which operations are not being closed:
+
+   ```bash
+   npm run test:detect-handles
+   ```
+
+2. **Common causes and solutions**:
+   - **Timers**: Call `.unref()` on timers or clear them with `clearTimeout()`/`clearInterval()`
+   - **Network requests**: Ensure all requests are completed or aborted in test teardown
+   - **API clients**: Close connections in `afterEach()` or `afterAll()` hooks
+   - **Mock servers**: Properly close mock servers in test teardown
+
+3. **In our codebase**: The main source of open handles was in the `klaviyoApiClient.ts` file, where network requests might not be properly closed in tests. We've addressed this by:
+   - Creating a client with no retries in the test files to avoid hanging connections
+   - Properly mocking all external API calls in tests
+   - Adding proper error handling in the API client
+
+4. **Jest configuration**: Our current configuration in `jest.config.js` includes:
+   ```javascript
+   module.exports = {
+     // other config...
+     forceExit: true,
+     clearMocks: true,
+     resetMocks: true,
+     restoreMocks: true,
+     // ...
+   };
+   ```
+
+5. **NPM Scripts**: We've added dedicated test scripts in package.json:
+   ```json
+   "scripts": {
+     "test": "jest",
+     "test:watch": "jest --watch",
+     "test:detect-handles": "jest --detectOpenHandles",
+     "test:debug": "jest --runInBand --detectOpenHandles"
+   }
+   ```
+   
+   Use `npm run test:detect-handles` when debugging open handle issues, and `npm run test:debug` for more detailed debugging with sequential test execution.
 
 ## Common Patterns and Conventions
 
@@ -205,9 +292,49 @@ npm test
 - Use the `/api/health` endpoint to verify the API is running
 - Examine the response from Klaviyo API for error details
 
+## Frontend-Backend Integration
+
+### Connection Architecture
+
+- **Frontend API Client**: The frontend uses a centralized API client (`lib/api-client.ts`) to communicate with the backend
+- **Backend Endpoints**: The backend exposes RESTful endpoints at `http://localhost:3001/api/*`
+- **Data Flow**: Frontend components use custom hooks that fetch data from the backend API
+
+### Common Integration Issues
+
+- **Connection Failures**: "Failed to fetch" errors occur when the frontend cannot connect to the backend
+- **CORS Issues**: Cross-Origin Resource Sharing is configured in the backend but may need adjustments in some environments
+- **Environment Variables**: The frontend uses `NEXT_PUBLIC_API_URL` to configure the API base URL (defaults to `http://localhost:3001/api`)
+
+### Running the Full Application
+
+To properly run the full application:
+
+1. Start the backend server first:
+   ```bash
+   cd backend
+   npm run dev
+   ```
+
+2. In a separate terminal, start the frontend:
+   ```bash
+   npm run dev
+   ```
+
+3. Access the application at `http://localhost:3000`
+
+### Troubleshooting Integration Issues
+
+- **Backend Not Running**: Ensure the backend server is running on port 3001
+- **API Connectivity**: Verify the backend is accessible by visiting `http://localhost:3001/api/health`
+- **API Key**: Check that the Klaviyo API key is properly set in the backend's `.env` file
+- **Network Issues**: Check for firewall or network configuration issues that might block local connections
+
 ## Future Enhancements
 
 - Implement pagination for large data sets
 - Add more granular caching strategies
 - Implement background data syncing
 - Add export functionality for reports
+- Add fallback UI state with sample data when backend is unavailable
+- Improve error handling in the frontend for API connection failures

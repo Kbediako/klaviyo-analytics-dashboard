@@ -120,10 +120,11 @@ This action plan outlines the steps needed to implement the Klaviyo Analytics Da
 
 ## Testing & Quality Assurance
 
-- [ ] **Unit Testing**
-  - [ ] Achieve >80% test coverage for backend services
-  - [ ] Test date range parsing logic thoroughly
-  - [ ] Verify error handling and edge cases
+- [x] **Unit Testing**
+  - [x] Achieve >80% test coverage for backend services
+  - [x] Test date range parsing logic thoroughly
+  - [x] Verify error handling and edge cases
+  - [x] Fix Jest open handles issue by adding `--detectOpenHandles` flag and resolving async operations
 
 - [ ] **Integration Testing**
   - [ ] Test all API endpoints with various parameters
@@ -134,6 +135,8 @@ This action plan outlines the steps needed to implement the Klaviyo Analytics Da
   - [x] Create basic E2E tests for the dashboard
   - [x] Test date range selection functionality
   - [x] Verify metrics calculation accuracy
+  - [x] Implement backend connectivity tests
+  - [x] Create E2E test runner with mock/real API options
 
 ## Documentation & Deployment
 
@@ -156,6 +159,22 @@ This action plan outlines the steps needed to implement the Klaviyo Analytics Da
   - [ ] Configure production environment
   - [ ] Setup secure environment variables
   - [ ] Document deployment process
+
+## Frontend-Backend Integration
+
+- [ ] **Integration Improvements**
+  - [ ] Add fallback UI state with sample data when backend is unavailable
+  - [ ] Improve error handling in the frontend for API connection failures
+  - [ ] Add clear error messages for common connection issues
+
+- [ ] **Documentation Updates**
+  - [x] Update knowledge transfer document with integration information
+  - [x] Add "Running the Application" section to README.md
+  - [ ] Create troubleshooting guide for common integration issues
+
+- [ ] **Development Experience**
+  - [x] Create a combined dev script to start both frontend and backend
+  - [ ] Add health check indicator in the UI for backend connectivity
 
 ## Future Enhancements
 
