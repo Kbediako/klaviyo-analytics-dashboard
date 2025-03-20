@@ -74,8 +74,13 @@ To transition to the live Klaviyo API:
 
 ### Live API Issues
 - **Authentication errors**: Verify your API key and permissions
-- **Rate limiting**: Implement proper backoff strategies
+- **Rate limiting**: Implement proper backoff strategies (configured in klaviyoApiClient.ts)
 - **Data differences**: Document and adapt to any differences between mock and real data
+- **405 Method Not Allowed errors**: Ensure endpoint paths have 'api/' prefix and proper structure
+- **Incorrect data transformations**: Check that response mapping matches frontend expectations
+- **Missing data properties**: Add validation and fallbacks for missing API response properties
+
+For detailed troubleshooting of integration issues, refer to [Integration Issues Guide](/Documentation/troubleshooting/integration-issues.md)
 
 ## Best Practices
 
@@ -83,9 +88,18 @@ To transition to the live Klaviyo API:
 2. **Document any discrepancies** between mock and live data
 3. **Test both scenarios** before deploying new features
 4. **Use feature flags** to switch between data sources when needed
+5. **Add validation** for required properties in UI components
+6. **Implement robust fallbacks** when API data is missing or incorrect
+7. **Use deterministic approaches** for consistent display of metrics
+8. **Follow Klaviyo API structure** exactly, including proper URL prefixes and headers
+9. **Test different date ranges** to ensure proper data retrieval
+10. **Enable detailed logging** during development and debugging
 
 ## Additional Resources
 
 - [Klaviyo API Documentation](https://developers.klaviyo.com/en/reference)
 - [Mock Data Structure Guide](/Documentation/testing/mock-data.md)
 - [Live API Testing Guide](/Documentation/roadmap/live-api-testing.md)
+- [Live API Implementation Guide](/Documentation/implementation/live-api-implementation.md)
+- [Integration Issues Guide](/Documentation/troubleshooting/integration-issues.md)
+- [Klaviyo API Revision](https://developers.klaviyo.com/en/docs/api_versioning_and_deprecation_policy)

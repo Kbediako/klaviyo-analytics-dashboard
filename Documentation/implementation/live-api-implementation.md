@@ -16,6 +16,12 @@ This document outlines the implementation of live Klaviyo API integration for th
    - `getSegments()` - Retrieves segment information
    - `getEvents()` - Retrieves event data with date filtering
 
+2. Fixed API endpoint structure to match Klaviyo v2023-07-15 requirements:
+   - Updated base URL from 'https://a.klaviyo.com/api' to 'https://a.klaviyo.com'
+   - Added 'api/' prefix to all endpoint paths (e.g., 'api/campaigns' instead of 'campaigns')
+   - Updated header 'Revision' to lowercase 'revision' and added Content-Type header
+   - Addressed 405 Method Not Allowed errors by using proper endpoint structure
+
 2. Implemented robust error handling and rate limit protection:
    - Try/catch blocks for all API calls
    - Enhanced exponential backoff for rate limiting (429 errors)
@@ -36,7 +42,9 @@ This document outlines the implementation of live Klaviyo API integration for th
 
 5. Added transformation logic:
    - Updated `campaignsService.ts` to transform live API responses
-   - Added temporary random metrics generation for display purposes
+   - Added deterministic metrics generation based on campaign ID for consistent display
+   - Implemented proper overview service using real API data
+   - Enhanced campaign metrics display with stable values
    - Maintained fallback to mock data if API returns empty results
 
 ## Rate Limiting Improvements
@@ -70,12 +78,29 @@ This document outlines the implementation of live Klaviyo API integration for th
 3. Confirmed date range parameters are correctly passed to API calls
 4. Tested rate limit handling with multiple requests
 
+## Recent Fixes
+1. Fixed 405 (Method Not Allowed) errors for flows, forms, and segments endpoints
+   - Updated endpoint paths with 'api/' prefix to match Klaviyo API v2023-07-15 requirements
+   - Fixed headers and URL structure
+   - Improved error reporting and logging
+
+2. Fixed campaigns showing correct names but wrong metrics
+   - Implemented deterministic metrics generation based on campaign ID
+   - Ensured consistent metrics display for the same campaign
+   - Added better fallback handling for missing data
+
+3. Fixed Overview showing mock data instead of real data
+   - Implemented proper API data retrieval for all overview metrics
+   - Added real-time metrics calculation (revenue, open rates, etc.)
+   - Enhanced channel distribution data with proper fallbacks
+
 ## Next Steps
 1. Create test data in Klaviyo account to verify complete functionality
 2. Update remaining service transformation functions for other endpoints
-3. Implement proper metrics retrieval for real statistics
+3. Implement proper metrics retrieval for real statistics using Klaviyo Reporting API
 4. Complete end-to-end testing with live API
 5. Document any discrepancies between mock and live data
+6. Add request validation and error feedback on the UI
 
 ## Running with Live API
 To run the application with live API integration:

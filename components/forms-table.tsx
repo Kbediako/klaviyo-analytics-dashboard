@@ -17,8 +17,12 @@ import { Progress } from './ui/progress';
  * 
  * @returns React component
  */
-export function FormsTable() {
-  const { data, isLoading, isError, error, refetch } = useForms();
+interface FormsTableProps {
+  dateRange: string;
+}
+
+export function FormsTable({ dateRange }: FormsTableProps) {
+  const { data, isLoading, isError, error, refetch } = useForms({ dateRange });
   
   // Show skeleton while loading
   if (isLoading) {
@@ -89,7 +93,7 @@ export function FormsTable() {
                   <div className="flex items-center gap-2">
                     <Progress 
                       value={form.submissionRate} 
-                      className={`h-2 ${
+                      className={`h-2 w-full ${
                         form.submissionRate >= 30
                           ? "bg-emerald-600/20"
                           : form.submissionRate >= 15

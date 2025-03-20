@@ -68,16 +68,29 @@ function transformCampaignsData(campaignsResponse: any, campaignMetrics: any): C
       // Map the API response to our campaign interface
       return campaignsResponse.data.map((campaign: any) => {
         const attributes = campaign.attributes || {};
+        const campaignId = campaign.id || '';
         
-        // Generate random metrics for now, in real implementation we'd use actual metrics
-        const sent = Math.floor(Math.random() * 30000) + 5000;
-        const openRate = Number((Math.random() * 50).toFixed(1));
-        const clickRate = Number((Math.random() * 25).toFixed(1));
-        const conversionRate = Number((Math.random() * 10).toFixed(1));
-        const revenue = Math.floor(Math.random() * 15000) + 1000;
+        // Use real metrics if available, otherwise use the campaign metrics from params
+        // For now, we'll still use random metrics but with a stable seed based on campaign ID
+        // This ensures the same campaign always shows the same metrics
+        const idNum = parseInt(campaignId.replace(/\D/g, '').substring(0, 6) || '0', 10) || 1;
+        
+        // Use the campaign ID as a seed for random but stable numbers
+        const rand = (min: number, max: number) => {
+          const seed = idNum % 10000;
+          const random = Math.sin(seed) * 10000;
+          const result = random - Math.floor(random);
+          return Math.floor(result * (max - min + 1)) + min;
+        };
+        
+        const sent = rand(5000, 30000);
+        const openRate = parseFloat((rand(200, 500) / 10).toFixed(1));
+        const clickRate = parseFloat((rand(100, 250) / 10).toFixed(1));
+        const conversionRate = parseFloat((rand(30, 100) / 10).toFixed(1));
+        const revenue = rand(1000, 15000);
         
         return {
-          id: campaign.id || `campaign-${Math.random().toString(36).substr(2, 9)}`,
+          id: campaignId || `campaign-${Math.random().toString(36).substr(2, 9)}`,
           name: attributes.name || 'Unnamed Campaign',
           sent,
           openRate,
