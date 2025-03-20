@@ -10,7 +10,8 @@
     "test:watch": "jest --watch",
     "test:detect-handles": "jest --detectOpenHandles",
     "test:debug": "jest --runInBand --detectOpenHandles",
-    "lint": "eslint . --ext .ts"
+    "lint": "eslint . --ext .ts",
+    "mock-server": "ts-node src/tests/mockServer.ts"
   },
   "keywords": [],
   "author": "",
