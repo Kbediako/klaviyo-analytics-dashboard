@@ -437,92 +437,151 @@ export default {
     }
   },
   
-  // Campaigns with various statuses and metrics
+  // Campaigns with the structure expected by CampaignsTable component
   campaigns: [
     {
       id: 'campaign1',
       name: 'Black Friday Sale',
-      status: 'sent',
-      metrics: {
-        opens: 1200,
-        clicks: 350,
-        revenue: 5600,
-        unsubscribes: 15
-      }
+      sent: 5000,
+      openRate: 24.0,
+      clickRate: 7.0,
+      conversionRate: 3.2,
+      revenue: 5600
     },
     {
       id: 'campaign2',
       name: 'Welcome Series',
-      status: 'draft',
-      metrics: {
-        opens: 0,
-        clicks: 0,
-        revenue: 0,
-        unsubscribes: 0
-      }
+      sent: 1200,
+      openRate: 32.5,
+      clickRate: 12.8,
+      conversionRate: 5.5,
+      revenue: 2800
     },
     {
       id: 'campaign3',
       name: 'Product Launch',
-      status: 'sent',
-      metrics: {
-        opens: 980,
-        clicks: 210,
-        revenue: 3200,
-        unsubscribes: 8
-      }
+      sent: 3500,
+      openRate: 28.0,
+      clickRate: 6.0,
+      conversionRate: 2.8,
+      revenue: 3200
     }
   ],
   
-  // Flows data
+  // Flows data with the structure expected by FlowsTable component
   flows: [
     {
       id: 'flow1',
       name: 'Welcome Flow',
-      status: 'active',
-      metrics: {
-        recipients: 2500,
-        conversions: 320,
-        revenue: 4800
-      }
+      recipients: 2500,
+      openRate: 35.2,
+      clickRate: 18.5,
+      conversionRate: 12.8,
+      revenue: 4800
     },
-    // More flows...
+    {
+      id: 'flow2',
+      name: 'Abandoned Cart',
+      recipients: 1800,
+      openRate: 42.0,
+      clickRate: 24.5,
+      conversionRate: 11.7,
+      revenue: 3600
+    }
   ],
   
-  // Forms data
+  // Forms data with the structure expected by FormsTable component
   forms: [
     {
       id: 'form1',
       name: 'Newsletter Signup',
-      metrics: {
-        views: 5600,
-        submissions: 980,
-        conversionRate: 17.5
-      }
+      views: 5600,
+      submissions: 980,
+      submissionRate: 17.5,
+      conversions: 245
     },
-    // More forms...
+    {
+      id: 'form2',
+      name: 'Exit Intent Popup',
+      views: 3200,
+      submissions: 420,
+      submissionRate: 13.1,
+      conversions: 105
+    }
   ],
   
-  // Segments data
+  // Segments data with the structure expected by SegmentsTable component
   segments: [
     {
       id: 'segment1',
       name: 'Active Customers',
-      memberCount: 3500,
-      metrics: {
-        revenue: 28000,
-        averageOrderValue: 80
-      }
+      count: 3500,
+      conversionRate: 8.5,
+      revenue: 28000
     },
-    // More segments...
+    {
+      id: 'segment2',
+      name: 'Lapsed Customers',
+      count: 1200,
+      conversionRate: 2.1,
+      revenue: 4500
+    }
   ],
+  
+  // Chart data for visualizations
+  charts: {
+    // Time series data for the Revenue Overview chart
+    revenueOverTime: [
+      { date: '2023-01', campaigns: 4200, flows: 3100, forms: 1800, other: 950 },
+      { date: '2023-02', campaigns: 4500, flows: 3300, forms: 1900, other: 1000 },
+      { date: '2023-03', campaigns: 4800, flows: 3500, forms: 2000, other: 1050 },
+      { date: '2023-04', campaigns: 5100, flows: 3700, forms: 2100, other: 1100 },
+      { date: '2023-05', campaigns: 5400, flows: 3900, forms: 2200, other: 1150 },
+      { date: '2023-06', campaigns: 5700, flows: 4100, forms: 2300, other: 1200 }
+    ],
+    
+    // Pie chart data for the Channel Distribution chart
+    channelDistribution: [
+      { name: 'Campaigns', value: 42 },
+      { name: 'Flows', value: 35 },
+      { name: 'Forms', value: 15 },
+      { name: 'Other', value: 8 }
+    ],
+    
+    // Data for other visualizations
+    topSegments: [
+      { name: 'VIP Customers', conversionRate: 42, count: 5842, revenue: 28450 },
+      { name: 'Recent Purchasers', conversionRate: 35, count: 12480, revenue: 42680 },
+      { name: 'Cart Abandoners', conversionRate: 28, count: 8640, revenue: 15280 },
+      { name: 'Email Engaged', conversionRate: 22, count: 18540, revenue: 24850 }
+    ],
+    topFlows: [
+      { name: 'Welcome Series', recipients: 8450, conversionRate: 32 },
+      { name: 'Abandoned Cart', recipients: 6280, conversionRate: 28 },
+      { name: 'Post-Purchase', recipients: 12480, conversionRate: 24 },
+      { name: 'Win-Back', recipients: 5840, conversionRate: 18 }
+    ],
+    topForms: [
+      { name: 'Newsletter Signup', views: 12480, submissionRate: 38 },
+      { name: 'Exit Intent Popup', views: 28450, submissionRate: 24 },
+      { name: 'Product Registration', views: 8640, submissionRate: 42 },
+      { name: 'Contact Form', views: 5840, submissionRate: 32 }
+    ]
+  },
   
   // Include edge cases
   emptyResponse: {
     campaigns: [],
     flows: [],
     forms: [],
-    segments: []
+    segments: [],
+    charts: {
+      revenueOverTime: [],
+      channelDistribution: [],
+      topSegments: [],
+      topFlows: [],
+      topForms: []
+    }
   },
   
   // Error responses
@@ -542,6 +601,46 @@ export default {
   }
 };
 ```
+
+### Chart Visualization Data
+
+For chart visualizations, the mock data structure needs to match what the charting library (Recharts) expects:
+
+1. **Line/Area Charts**: Array of objects with consistent property names
+   ```typescript
+   // Revenue over time chart data
+   [
+     { date: '2023-01', campaigns: 4200, flows: 3100, forms: 1800, other: 950 },
+     { date: '2023-02', campaigns: 4500, flows: 3300, forms: 1900, other: 1000 },
+     // ...more data points
+   ]
+   ```
+
+2. **Pie/Donut Charts**: Array of objects with `name` and `value` properties
+   ```typescript
+   // Channel distribution chart data
+   [
+     { name: 'Campaigns', value: 42 },
+     { name: 'Flows', value: 35 },
+     { name: 'Forms', value: 15 },
+     { name: 'Other', value: 8 }
+   ]
+   ```
+
+3. **Bar Charts**: Similar to line charts, with categories and values
+   ```typescript
+   [
+     { category: 'Jan', value: 4200 },
+     { category: 'Feb', value: 4500 },
+     // ...more data points
+   ]
+   ```
+
+When testing visualizations with mock data:
+- Ensure the mock data structure matches what the visualization components expect
+- Include edge cases like empty data sets, single data points, or extreme values
+- Test different date ranges to ensure visualizations handle varying amounts of data
+- For interactive charts, test with both mouse and keyboard interactions
 
 ### Using Mock Data in Different Contexts
 
