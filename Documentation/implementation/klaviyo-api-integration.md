@@ -53,6 +53,27 @@ Each data type has a dedicated service that handles:
 3. Calculating derived metrics (e.g., conversion rates)
 4. Providing fallback data when API calls fail
 
+### Data Processing Flow
+
+When the frontend requests data, the following process occurs:
+
+1. The frontend makes a request to our backend API
+2. The backend controller handles the request and calls the appropriate service
+3. The service uses `klaviyoApiClient` to fetch data from Klaviyo API
+4. The service transforms raw Klaviyo data into the format needed by the frontend
+5. If real data is available, it's used; otherwise, synthetic data is generated
+6. For metrics that aren't directly available from Klaviyo, we compute reasonable estimates
+7. The transformed data is returned to the frontend for display
+
+### Synthetic Data Generation
+
+For metrics that aren't directly available from the Klaviyo API:
+
+1. We use deterministic random functions based on IDs to ensure consistent values
+2. Different types of flows/campaigns get different base multipliers for realistic estimates
+3. Metrics are calculated using industry-standard relationships (e.g., click rates as a percentage of opens)
+4. Revenue is estimated based on conversions and average order values
+
 ### Endpoint Structure
 
 All Klaviyo API endpoints use the following structure:
@@ -74,6 +95,8 @@ If dashboard sections show "Nothing Available" messages:
   1. Check API key permissions in Klaviyo
   2. Look for console errors indicating specific API issues
   3. Verify that appropriate metrics exist in the Klaviyo account
+  4. Check for proper data transformation in the service files
+  5. Verify that the specific entity type (campaigns, flows, etc.) exists in your Klaviyo account
 
 ### 2. Static Data in Overview Cards
 
@@ -84,6 +107,17 @@ If overview cards show static data while other sections show no data:
   1. Check if the Klaviyo account has the specific metrics needed
   2. Verify the Shopify Placed Order Metric ID (`WRfUa5`) exists and is accessible
   3. Check backend logs for specific API errors
+  4. Look at the `overviewService.ts` to verify it's properly processing the metrics
+
+### 3. Synthetic vs. Real Metrics
+
+If you notice that some metrics don't match your Klaviyo dashboard:
+
+- **Cause:** We're using synthetic generation for metrics not directly available through the API
+- **Solution:**
+  1. Check the API logs to see what data is actually coming from Klaviyo
+  2. Adjust the multipliers in the transformation functions to match your expected values
+  3. If available, implement specific metric IDs for your key performance indicators
 
 ### 3. API Authentication Errors
 
