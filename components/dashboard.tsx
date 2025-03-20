@@ -6,6 +6,8 @@ import { CampaignsTable } from './campaigns-table';
 import { FlowsTable } from './flows-table';
 import { FormsTable } from './forms-table';
 import { SegmentsTable } from './segments-table';
+import { RevenueChart } from './revenue-chart';
+import { ChannelDistributionChart } from './channel-distribution-chart';
 import { clearCache } from '../lib/api-client';
 import { 
   BarChartIcon, 
@@ -116,10 +118,7 @@ export function Dashboard() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-[300px] flex items-center justify-center bg-muted/20 rounded-md">
-                    <LineChartIcon className="h-8 w-8 text-muted-foreground" />
-                    <span className="ml-2 text-sm text-muted-foreground">Revenue chart would render here</span>
-                  </div>
+                  <RevenueChart />
                   <div className="mt-4 flex items-center justify-between text-sm">
                     <div className="flex items-center">
                       <div className="mr-2 h-3 w-3 rounded-full bg-blue-500" />
@@ -147,9 +146,7 @@ export function Dashboard() {
                   <CardDescription>Revenue by marketing channel</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center space-y-4">
-                  <div className="h-[180px] w-[180px] flex items-center justify-center bg-muted/20 rounded-full">
-                    <PieChartIcon className="h-8 w-8 text-muted-foreground" />
-                  </div>
+                  <ChannelDistributionChart />
                   <div className="w-full space-y-3">
                     <ChannelItem name="Campaigns" value="42%" color="bg-blue-500" />
                     <ChannelItem name="Flows" value="35%" color="bg-violet-500" />
