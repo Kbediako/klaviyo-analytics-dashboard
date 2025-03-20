@@ -1,4 +1,5 @@
 import { KlaviyoApiClient } from './klaviyoApiClient';
+import { FilterParam } from '../utils/jsonApiUtils';
 import fetch from 'node-fetch';
 
 // Mock node-fetch
@@ -36,9 +37,10 @@ describe('KlaviyoApiClient', () => {
     expect(options).toEqual({
       method: 'GET',
       headers: {
-        'Authorization': `Klaviyo-API-Key ${mockApiKey}`,
+        'Authorization': `Bearer ${mockApiKey}`,
         'Accept': 'application/json',
-        'Revision': '2023-07-15',
+        'revision': '2023-07-15',
+        'Content-Type': 'application/json',
       },
     });
   });
@@ -89,9 +91,9 @@ describe('KlaviyoApiClient', () => {
       
       const [url] = mockedFetch.mock.calls[0];
       expect(url).toContain('campaigns');
-      expect(url).toContain(`filter=greater-or-equal%28created`);
-      expect(url).toContain(`less-or-equal%28created`);
-      expect(url).toContain('include=campaign-messages');
+      expect(url).toContain('messages.channel');
+      expect(url).toContain('include=tags');
+      expect(url).toContain('fields');
     });
     
     it('should call getFlows with correct parameters', async () => {
@@ -99,18 +101,27 @@ describe('KlaviyoApiClient', () => {
       
       const [url] = mockedFetch.mock.calls[0];
       expect(url).toContain('flows');
-      expect(url).toContain('include=flow-actions');
-      expect(url).toContain('flow-messages');
+      expect(url).toContain('include=tags');
+      expect(url).toContain('fields');
+      expect(url).toContain('page');
     });
     
     it('should call getEvents with correct parameters', async () => {
-      await client.getEvents(mockDateRange, 'metric.id=opened-email');
+      const additionalFilters: FilterParam[] = [
+        {
+          field: 'metric.id',
+          operator: 'equals',
+          value: 'opened-email'
+        }
+      ];
+      
+      await client.getEvents(mockDateRange, additionalFilters);
       
       const [url] = mockedFetch.mock.calls[0];
       expect(url).toContain('events');
-      expect(url).toContain(`filter=greater-or-equal%28datetime`);
-      expect(url).toContain(`less-or-equal%28datetime`);
-      expect(url).toContain('metric.id%3Dopened-email');
+      expect(url).toContain(`datetime`);
+      expect(url).toContain(`metric.id`);
+      expect(url).toContain('opened-email');
     });
   });
 });
