@@ -132,6 +132,167 @@ cd backend
 npm test
 ```
 
+### Testing Without Live API Calls
+
+There are several approaches to test the application without making live API calls to Klaviyo:
+
+#### 1. Unit Testing with Mocks
+
+The backend is set up for unit testing with Jest, using mocks to avoid live API calls:
+
+```typescript
+// Example from a service test
+jest.mock('../services/klaviyoApiClient', () => ({
+  getKlaviyoData: jest.fn().mockResolvedValue(mockApiResponse)
+}));
+
+// Then in your test
+test('should process campaign data correctly', async () => {
+  // The test will use the mocked API client instead of making real calls
+  const result = await campaignsService.getCampaigns('last-30-days');
+  expect(result).toEqual(expectedOutput);
+});
+```
+
+#### 2. Integration Testing with API Mocks
+
+For testing API endpoints without live calls:
+
+```typescript
+// Example integration test approach
+describe('GET /api/campaigns', () => {
+  beforeEach(() => {
+    // Mock the service or API client before each test
+    jest.spyOn(campaignsService, 'getCampaigns').mockResolvedValue(mockCampaigns);
+  });
+
+  it('should return campaigns data', async () => {
+    const response = await request(app)
+      .get('/api/campaigns?dateRange=last-30-days')
+      .expect(200);
+    
+    expect(response.body).toEqual(expectedResponse);
+  });
+});
+```
+
+#### 3. Mock API Server
+
+For more comprehensive testing, you can create a mock API server:
+
+1. Create a mock server file in your backend:
+
+```typescript
+// backend/src/mockServer.ts
+import express from 'express';
+import cors from 'cors';
+import mockResponses from './tests/mockData';
+
+const app = express();
+app.use(cors());
+
+// Mock endpoints that return predefined data
+app.get('/api/overview', (req, res) => {
+  res.json(mockResponses.overview);
+});
+
+app.get('/api/campaigns', (req, res) => {
+  res.json(mockResponses.campaigns);
+});
+
+// Add other endpoints...
+
+const PORT = process.env.MOCK_PORT || 3002;
+app.listen(PORT, () => {
+  console.log(`Mock API server running on port ${PORT}`);
+});
+```
+
+2. Add a script to run it:
+
+```json
+// In backend/package.json
+"scripts": {
+  "mock-server": "ts-node src/mockServer.ts"
+}
+```
+
+3. Point your frontend to the mock server during testing:
+
+```bash
+# Start the mock server
+cd backend
+npm run mock-server
+
+# In a separate terminal, start the frontend with the mock API URL
+cd ..
+NEXT_PUBLIC_API_URL=http://localhost:3002/api npm run dev
+```
+
+#### 4. MSW (Mock Service Worker)
+
+For advanced frontend testing, MSW provides a way to intercept network requests:
+
+1. Install MSW:
+```bash
+npm install --save-dev msw
+```
+
+2. Set up handlers for your API endpoints:
+```typescript
+// mocks/handlers.js
+import { rest } from 'msw'
+import mockData from './mockData'
+
+export const handlers = [
+  rest.get('http://localhost:3001/api/overview', (req, res, ctx) => {
+    return res(ctx.json(mockData.overview))
+  }),
+  rest.get('http://localhost:3001/api/campaigns', (req, res, ctx) => {
+    return res(ctx.json(mockData.campaigns))
+  }),
+  // Add other endpoints...
+]
+```
+
+3. Set up the service worker and integrate with your tests or development environment
+
+#### 5. Using the Existing E2E Test Mock Mode
+
+The project already includes a mock mode for E2E testing:
+
+```bash
+# No need to start the backend for mock mode
+npm run dev  # Start just the frontend
+# Then open http://localhost:3000/e2e-test-runner.html in your browser
+# Select "Mock Mode" in the test runner
+```
+
+#### 6. Testing API Client in Isolation
+
+To test the Klaviyo API client without making real calls:
+
+```typescript
+// klaviyoApiClient.test.ts
+import nock from 'nock';
+import { getKlaviyoData } from './klaviyoApiClient';
+
+describe('Klaviyo API Client', () => {
+  beforeEach(() => {
+    // Mock the HTTP requests at the network level
+    nock('https://a.klaviyo.com/api')
+      .get('/v1/campaigns')
+      .query(true)
+      .reply(200, mockKlaviyoResponse);
+  });
+
+  it('should fetch and transform campaign data', async () => {
+    const result = await getKlaviyoData('campaigns', { dateRange: 'last-30-days' });
+    expect(result).toEqual(expectedTransformedData);
+  });
+});
+```
+
 ### End-to-End Testing
 
 The project includes comprehensive end-to-end tests that verify the integration between frontend and backend:
@@ -416,7 +577,8 @@ When working with Next.js applications that use server-side rendering (SSR), you
    - **Solution**: Use the `'use client'` directive for components that need browser-specific functionality, or use dynamic imports with Next.js's `dynamic` function.
 
 5. **Third-Party Libraries and Extensions**:
-   - **Problem**: Some third-party libraries or browser extensions may add attributes to elements (like `data-sharkid`) that cause hydration mismatches.
-   - **Solution**: If you see attributes like `data-sharkid` in hydration errors, check if you have any browser extensions that might be modifying the DOM. For libraries, consider using them only in client components or wrapping them with dynamic imports.
+   - **Problem**: Some third-party libraries or browser extensions may add attributes to elements (like `data-sharkid`) that cause hydration mismatches. This is a common issue with browser extensions like Grammarly, LastPass, or developer tools that modify the DOM.
+   - **Solution**: If you see attributes like `data-sharkid` in hydration errors, check if you have any browser extensions that might be modifying the DOM. Try disabling extensions temporarily to identify the culprit. For libraries, consider using them only in client components or wrapping them with dynamic imports.
+   - **Testing Without Live API Calls**: When testing with mock data, these hydration errors may still occur due to browser extensions. They don't affect functionality but can clutter the console. You can safely ignore these specific errors during development if you've confirmed they're caused by extensions.
 
 When you encounter a hydration error, check the browser console for specific details about what's causing the mismatch. The error message often includes information about the specific elements that don't match.
