@@ -22,7 +22,7 @@ export function OverviewSection() {
   // Show skeleton while loading
   if (isLoading) {
     return (
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 overview-section">
         <MetricCardSkeleton />
         <MetricCardSkeleton />
         <MetricCardSkeleton />
@@ -45,7 +45,7 @@ export function OverviewSection() {
   // Show data if available
   if (data) {
     return (
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 overview-section">
         <MetricCard
           title="Total Revenue"
           value={data.revenue.current}

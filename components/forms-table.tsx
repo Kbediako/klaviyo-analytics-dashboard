@@ -23,7 +23,7 @@ export function FormsTable() {
   // Show skeleton while loading
   if (isLoading) {
     return (
-      <div className="rounded-md border">
+      <div className="rounded-md border forms-table">
         <Table>
           <TableHeader>
             <TableRow>
@@ -64,7 +64,7 @@ export function FormsTable() {
   // Show data if available
   if (data && data.length > 0) {
     return (
-      <div className="rounded-md border">
+      <div className="rounded-md border forms-table">
         <Table>
           <TableHeader>
             <TableRow>

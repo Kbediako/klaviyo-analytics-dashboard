@@ -7,8 +7,24 @@
 // We'll use console.error for now and integrate toast notifications later
 // import { toast } from 'components/ui/use-toast';
 
+// Get API base URL from URL parameter, environment variable, or default
+function getApiBaseUrl(): string {
+  // Check if we're in the browser
+  if (typeof window !== 'undefined') {
+    // Check for apiUrl in URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const apiUrlParam = urlParams.get('apiUrl');
+    if (apiUrlParam) {
+      return apiUrlParam;
+    }
+  }
+  
+  // Fall back to environment variable or default
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+}
+
 // Base URL for API requests
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = getApiBaseUrl();
 
 // Default options for fetch requests
 const defaultOptions: RequestInit = {

@@ -35,7 +35,7 @@ export function CampaignsTable() {
   // Show skeleton while loading
   if (isLoading) {
     return (
-      <div className="rounded-md border">
+      <div className="rounded-md border campaigns-table">
         <Table>
           <TableHeader>
             <TableRow>
@@ -78,7 +78,7 @@ export function CampaignsTable() {
   // Show data if available
   if (data && data.length > 0) {
     return (
-      <div className="rounded-md border">
+      <div className="rounded-md border campaigns-table">
         <Table>
           <TableHeader>
             <TableRow>

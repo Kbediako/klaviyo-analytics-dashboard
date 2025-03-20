@@ -35,7 +35,7 @@ export function SegmentsTable() {
   // Show skeleton while loading
   if (isLoading) {
     return (
-      <div className="rounded-md border">
+      <div className="rounded-md border segments-table">
         <Table>
           <TableHeader>
             <TableRow>
@@ -77,7 +77,7 @@ export function SegmentsTable() {
     const sortedSegments = [...data].sort((a, b) => b.revenue - a.revenue);
     
     return (
-      <div className="rounded-md border">
+      <div className="rounded-md border segments-table">
         <Table>
           <TableHeader>
             <TableRow>

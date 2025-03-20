@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Klaviyo Analytics Dashboard - Comprehensive Tests</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.5;
+      color: #212529;
+      background-color: #f8f9fa;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    
+    header {
+      background-color: #343a40;
+      color: white;
+      padding: 1rem 0;
+      margin-bottom: 2rem;
+    }
+    
+    header .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 0.5rem;
+      padding-bottom: 0.5rem;
+    }
+    
+    h1 {
+      margin: 0;
+      font-size: 1.75rem;
+    }
+    
+    .test-modes {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    
+    .test-mode {
+      flex: 1;
+      padding: 1.5rem;
+      background-color: white;
+      border-radius: 0.5rem;
+      box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .test-mode:hover {
+      transform: translateY(-0.25rem);
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+    
+    .test-mode h2 {
+      margin-top: 0;
+      color: #343a40;
+    }
+    
+    .test-mode p {
+      color: #6c757d;
+      margin-bottom: 0;
+    }
+    
+    .test-mode.active {
+      border: 2px solid #007bff;
+    }
+    
+    .test-frame {
+      width: 100%;
+      height: 800px;
+      border: none;
+      border-radius: 0.5rem;
+      box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+    
+    .test-controls {
+      margin-bottom: 1rem;
+      display: flex;
+      gap: 0.5rem;
+    }
+    
+    button {
+      padding: 0.5rem 1rem;
+      border: 1px solid #ced4da;
+      border-radius: 0.25rem;
+      background-color: #fff;
+      cursor: pointer;
+      font-size: 0.875rem;
+      transition: background-color 0.2s;
+    }
+    
+    button:hover {
+      background-color: #f1f3f5;
+    }
+    
+    button.primary {
+      background-color: #007bff;
+      color: white;
+      border-color: #007bff;
+    }
+    
+    button.primary:hover {
+      background-color: #0069d9;
+      border-color: #0062cc;
+    }
+    
+    button.success {
+      background-color: #28a745;
+      color: white;
+      border-color: #28a745;
+    }
+    
+    button.success:hover {
+      background-color: #218838;
+      border-color: #1e7e34;
+    }
+    
+    button.warning {
+      background-color: #ffc107;
+      color: #212529;
+      border-color: #ffc107;
+    }
+    
+    button.warning:hover {
+      background-color: #e0a800;
+      border-color: #d39e00;
+    }
+    
+    button.danger {
+      background-color: #dc3545;
+      color: white;
+      border-color: #dc3545;
+    }
+    
+    button.danger:hover {
+      background-color: #c82333;
+      border-color: #bd2130;
+    }
+    
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.5rem 1rem;
+      background-color: #e9ecef;
+      border-radius: 0.25rem;
+      margin-bottom: 1rem;
+    }
+    
+    .status-indicator {
+      width: 0.75rem;
+      height: 0.75rem;
+      border-radius: 50%;
+      background-color: #6c757d;
+    }
+    
+    .status-indicator.connected {
+      background-color: #28a745;
+    }
+    
+    .status-indicator.disconnected {
+      background-color: #dc3545;
+    }
+    
+    .status-text {
+      font-size: 0.875rem;
+      color: #495057;
+    }
+    
+    footer {
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid #dee2e6;
+      color: #6c757d;
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Klaviyo Analytics Dashboard - Comprehensive Tests</h1>
+      <div class="api-mode-toggle">
+        <button id="toggle-mock-mode" class="primary">Using Mock API</button>
+      </div>
+    </div>
+  </header>
+  
+  <div class="container">
+    <div class="status-bar">
+      <div id="api-status" class="status-indicator connected"></div>
+      <div id="api-status-text" class="status-text">Connected to Mock API</div>
+    </div>
+    
+    <div class="test-controls">
+      <button id="run-dashboard" class="primary">Open Dashboard</button>
+      <button id="run-e2e-tests">Run E2E Tests</button>
+      <button id="run-comprehensive-tests">Run Comprehensive Tests</button>
+      <button id="check-api-health">Check API Health</button>
+    </div>
+    
+    <div class="test-modes">
+      <div class="test-mode active" data-mode="mock">
+        <h2>Mock API Mode</h2>
+        <p>Test the dashboard with mock data without making live API calls to Klaviyo.</p>
+        <ul>
+          <li>No API key required</li>
+          <li>Consistent test data</li>
+          <li>Fast response times</li>
+          <li>No rate limiting</li>
+        </ul>
+      </div>
+      
+      <div class="test-mode" data-mode="live">
+        <h2>Live API Mode</h2>
+        <p>Test the dashboard with live data from the Klaviyo API.</p>
+        <ul>
+          <li>Requires valid Klaviyo API key</li>
+          <li>Real-time data</li>
+          <li>Subject to API rate limits</li>
+          <li>May have slower response times</li>
+        </ul>
+      </div>
+    </div>
+    
+    <iframe id="test-frame" class="test-frame" src="about:blank"></iframe>
+    
+    <footer>
+      <p>Klaviyo Analytics Dashboard - Testing Framework</p>
+    </footer>
+  </div>
+  
+  <script>
+    // Configuration
+    const config = {
+      mockApiUrl: 'http://localhost:3002/api',
+      liveApiUrl: 'http://localhost:3001/api',
+      dashboardUrl: 'http://localhost:3000',
+      e2eTestUrl: 'http://localhost:3000/e2e-test-runner.html',
+      comprehensiveTestUrl: 'http://localhost:3000/comprehensive-test-runner.html'
+    };
+    
+    // State
+    let currentMode = 'mock';
+    
+    // Elements
+    const testFrame = document.getElementById('test-frame');
+    const apiStatus = document.getElementById('api-status');
+    const apiStatusText = document.getElementById('api-status-text');
+    const toggleMockModeButton = document.getElementById('toggle-mock-mode');
+    const runDashboardButton = document.getElementById('run-dashboard');
+    const runE2ETestsButton = document.getElementById('run-e2e-tests');
+    const runComprehensiveTestsButton = document.getElementById('run-comprehensive-tests');
+    const checkApiHealthButton = document.getElementById('check-api-health');
+    const testModes = document.querySelectorAll('.test-mode');
+    
+    // Functions
+    function setApiMode(mode) {
+      currentMode = mode;
+      
+      // Update UI
+      testModes.forEach(modeElement => {
+        if (modeElement.dataset.mode === mode) {
+          modeElement.classList.add('active');
+        } else {
+          modeElement.classList.remove('active');
+        }
+      });
+      
+      toggleMockModeButton.textContent = mode === 'mock' ? 'Using Mock API' : 'Using Live API';
+      toggleMockModeButton.className = mode === 'mock' ? 'primary' : 'warning';
+      
+      // Check API health
+      checkApiHealth();
+    }
+    
+    async function checkApiHealth() {
+      const apiUrl = currentMode === 'mock' ? config.mockApiUrl : config.liveApiUrl;
+      
+      try {
+        const response = await fetch(`${apiUrl}/health`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          
+          apiStatus.className = 'status-indicator connected';
+          apiStatusText.textContent = `Connected to ${data.mode || currentMode.toUpperCase()} API (${response.status})`;
+          
+          return true;
+        } else {
+          throw new Error(`HTTP error ${response.status}`);
+        }
+      } catch (error) {
+        apiStatus.className = 'status-indicator disconnected';
+        apiStatusText.textContent = `Failed to connect to ${currentMode.toUpperCase()} API: ${error.message}`;
+        
+        return false;
+      }
+    }
+    
+    function openDashboard() {
+      const apiUrl = currentMode === 'mock' ? config.mockApiUrl : config.liveApiUrl;
+      const url = `${config.dashboardUrl}?apiUrl=${encodeURIComponent(apiUrl)}`;
+      
+      testFrame.src = url;
+    }
+    
+    function openE2ETests() {
+      testFrame.src = config.e2eTestUrl;
+    }
+    
+    function openComprehensiveTests() {
+      // Load the dashboard with the test script
+      const apiUrl = currentMode === 'mock' ? config.mockApiUrl : config.liveApiUrl;
+      const url = `${config.dashboardUrl}?apiUrl=${encodeURIComponent(apiUrl)}&test=comprehensive`;
+      
+      testFrame.src = url;
+    }
+    
+    // Event listeners
+    toggleMockModeButton.addEventListener('click', () => {
+      setApiMode(currentMode === 'mock' ? 'live' : 'mock');
+    });
+    
+    runDashboardButton.addEventListener('click', openDashboard);
+    runE2ETestsButton.addEventListener('click', openE2ETests);
+    runComprehensiveTestsButton.addEventListener('click', openComprehensiveTests);
+    checkApiHealthButton.addEventListener('click', checkApiHealth);
+    
+    testModes.forEach(modeElement => {
+      modeElement.addEventListener('click', () => {
+        setApiMode(modeElement.dataset.mode);
+      });
+    });
+    
+    // Initialize
+    setApiMode('mock');
+    openDashboard();
+  </script>
+</body>
+</html>

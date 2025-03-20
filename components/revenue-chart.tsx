@@ -42,7 +42,7 @@ export function RevenueChart() {
   
   // Show chart if data is available
   return (
-    <ResponsiveContainer width="100%" height={300}>
+    <ResponsiveContainer width="100%" height={300} className="revenue-chart">
       <LineChart
         data={data}
         margin={{

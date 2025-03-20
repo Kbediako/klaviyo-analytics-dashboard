@@ -43,7 +43,7 @@ export function ChannelDistributionChart() {
   
   // Show chart if data is available
   return (
-    <ResponsiveContainer width="100%" height={180}>
+    <ResponsiveContainer width="100%" height={180} className="channel-distribution-chart">
       <PieChart>
         <Pie
           data={data}
