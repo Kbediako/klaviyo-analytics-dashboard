@@ -1,235 +1,128 @@
 # Mock Data Structure Guide
 
-To effectively test without live API calls, you need comprehensive mock data that covers various scenarios.
+## Overview
 
-## Data Structure Overview
+This document outlines the structure of mock data used for testing the Klaviyo Analytics Dashboard. The mock data is designed to closely mirror the structure and behavior of the Klaviyo API while allowing for controlled testing scenarios.
 
-It's critical that your mock data structure matches exactly what your components expect. Examine your components to understand the expected data structure before creating mock data.
+## Date Range Test Data
 
-## Mock Data Examples
+### Standard Date Ranges
+Mock data is provided for the following standard date ranges:
+- `last-7-days`: Recent data with higher granularity
+- `last-30-days` (default): Standard monthly view
+- `last-90-days`: Quarterly view with aggregated metrics
 
-```typescript
-// mockData.ts
-export default {
-  // Overview data with the structure expected by OverviewSection component
+### Edge Cases
+The mock data includes the following date range edge cases:
+1. Year boundary crossing (Dec 2023 - Jan 2024)
+2. Single day selection (2024-01-01)
+3. Future dates (should be rejected)
+4. Invalid date formats (should be handled gracefully)
+
+### Data Structure
+
+Each date range mock response includes:
+
+```javascript
+{
   overview: {
     revenue: {
-      current: 12500,
-      change: 15
+      current: number,
+      previous: number,
+      change: number
     },
     subscribers: {
-      current: 1250,
-      change: 8
+      current: number,
+      previous: number,
+      change: number
+    },
+    openRate: {
+      current: number,
+      previous: number,
+      change: number
     },
     conversionRate: {
-      current: 3.2,
-      change: -1.5
-    },
-    formSubmissions: {
-      current: 450,
-      change: 12
+      current: number,
+      previous: number,
+      change: number
     }
   },
-  
-  // Campaigns with the structure expected by CampaignsTable component
   campaigns: [
     {
-      id: 'campaign1',
-      name: 'Black Friday Sale',
-      sent: 5000,
-      openRate: 24.0,
-      clickRate: 7.0,
-      conversionRate: 3.2,
-      revenue: 5600
-    },
-    {
-      id: 'campaign2',
-      name: 'Welcome Series',
-      sent: 1200,
-      openRate: 32.5,
-      clickRate: 12.8,
-      conversionRate: 5.5,
-      revenue: 2800
-    }
-  ],
-  
-  // Flows data with the structure expected by FlowsTable component
-  flows: [
-    {
-      id: 'flow1',
-      name: 'Welcome Flow',
-      recipients: 2500,
-      openRate: 35.2,
-      clickRate: 18.5,
-      conversionRate: 12.8,
-      revenue: 4800
-    },
-    {
-      id: 'flow2',
-      name: 'Abandoned Cart',
-      recipients: 1800,
-      openRate: 42.0,
-      clickRate: 24.5,
-      conversionRate: 11.7,
-      revenue: 3600
-    }
-  ],
-  
-  // Forms data with the structure expected by FormsTable component
-  forms: [
-    {
-      id: 'form1',
-      name: 'Newsletter Signup',
-      views: 5600,
-      submissions: 980,
-      submissionRate: 17.5,
-      conversions: 245
-    },
-    {
-      id: 'form2',
-      name: 'Exit Intent Popup',
-      views: 3200,
-      submissions: 420,
-      submissionRate: 13.1,
-      conversions: 105
-    }
-  ],
-  
-  // Segments data with the structure expected by SegmentsTable component
-  segments: [
-    {
-      id: 'segment1',
-      name: 'Active Customers',
-      count: 3500,
-      conversionRate: 8.5,
-      revenue: 28000
-    },
-    {
-      id: 'segment2',
-      name: 'Lapsed Customers',
-      count: 1200,
-      conversionRate: 2.1,
-      revenue: 4500
+      id: string,
+      name: string,
+      recipients: number,
+      openRate: number,
+      clickRate: number,
+      conversionRate: number,
+      revenue: number
     }
   ]
 }
 ```
 
-## Chart Data Structure
+### Mock Data Files
+- `dashboard.test.js`: Base mock data for default scenarios
+- `mock-date-ranges.js`: Extended mock data for date range testing
 
-### Time Series Data
-```typescript
-// Revenue over time chart data
-export const timeSeriesData = [
-  { date: '2023-01', campaigns: 4200, flows: 3100, forms: 1800, other: 950 },
-  { date: '2023-02', campaigns: 4500, flows: 3300, forms: 1900, other: 1000 },
-  { date: '2023-03', campaigns: 4800, flows: 3500, forms: 2000, other: 1050 }
-];
+## Usage in Tests
+
+### Loading Mock Data
+```javascript
+// Load mock data in test setup
+const mockDateRangesScript = document.createElement('script');
+mockDateRangesScript.src = '/mock-date-ranges.js';
+document.head.appendChild(mockDateRangesScript);
 ```
 
-### Distribution Data
-```typescript
-// Channel distribution chart data
-export const distributionData = [
-  { name: 'Campaigns', value: 42 },
-  { name: 'Flows', value: 35 },
-  { name: 'Forms', value: 15 },
-  { name: 'Other', value: 8 }
-];
+### Accessing Mock Data
+```javascript
+// Get mock data for a specific date range
+const mockData = window.mockDateRangeResponses[dateRange];
 ```
 
-### Top Performers Data
-```typescript
-export const topPerformersData = {
-  segments: [
-    { name: 'VIP Customers', conversionRate: 42, count: 5842, revenue: 28450 },
-    { name: 'Recent Purchasers', conversionRate: 35, count: 12480, revenue: 42680 }
-  ],
-  flows: [
-    { name: 'Welcome Series', recipients: 8450, conversionRate: 32 },
-    { name: 'Abandoned Cart', recipients: 6280, conversionRate: 28 }
-  ],
-  forms: [
-    { name: 'Newsletter Signup', views: 12480, submissionRate: 38 },
-    { name: 'Exit Intent Popup', views: 28450, submissionRate: 24 }
-  ]
-};
-```
+### Date Range Formats
 
-## Error Scenarios
+1. Standard Ranges:
+   - `last-7-days`
+   - `last-30-days`
+   - `last-90-days`
 
-```typescript
-export const errorResponses = {
-  rateLimitExceeded: {
-    status: 429,
-    message: 'Rate limit exceeded. Try again later.'
-  },
-  unauthorized: {
-    status: 401,
-    message: 'Invalid API key'
-  },
-  serverError: {
-    status: 500,
-    message: 'Internal server error'
-  }
-};
-```
+2. Custom Range Format:
+   - Format: `YYYY-MM-DD_to_YYYY-MM-DD`
+   - Example: `2023-12-25_to_2024-01-05`
 
-## Edge Cases
+3. Single Day Format:
+   - Format: `YYYY-MM-DD_to_YYYY-MM-DD` (same date)
+   - Example: `2024-01-01_to_2024-01-01`
 
-```typescript
-export const edgeCases = {
-  emptyData: {
-    campaigns: [],
-    flows: [],
-    forms: [],
-    segments: [],
-    charts: {
-      revenueOverTime: [],
-      channelDistribution: [],
-      topSegments: [],
-      topFlows: [],
-      topForms: []
-    }
-  },
-  singleDataPoint: {
-    revenueOverTime: [
-      { date: '2023-01', campaigns: 4200, flows: 3100, forms: 1800, other: 950 }
-    ]
-  },
-  extremeValues: {
-    revenue: 999999999,
-    conversionRate: 100,
-    count: 0
-  }
-};
-```
+## Maintaining Mock Data
+
+When updating mock data:
+1. Ensure data is realistic and consistent across date ranges
+2. Maintain proper relationships between metrics
+3. Include both successful and error scenarios
+4. Keep data aligned with Klaviyo API structure
+5. Document any new mock data patterns
 
 ## Best Practices
 
-1. **Match Component Requirements**
-   - Study component PropTypes/interfaces
-   - Include all required fields
-   - Use correct data types
+1. Data Consistency:
+   - Ensure metrics make logical sense
+   - Maintain consistent decimal places
+   - Use realistic value ranges
 
-2. **Cover Edge Cases**
-   - Empty arrays/objects
-   - Null/undefined values
-   - Extreme values
-   - Single data points
+2. Error Scenarios:
+   - Include invalid date formats
+   - Test future date handling
+   - Verify error message consistency
 
-3. **Include Error States**
-   - API errors
-   - Validation errors
-   - Network errors
-   - Timeout scenarios
+3. Performance Considerations:
+   - Keep mock data files lightweight
+   - Use appropriate data types
+   - Consider pagination for large datasets
 
-4. **Maintain Consistency**
-   - Use consistent naming
-   - Follow data structure patterns
-   - Keep date formats consistent
-
-5. **Document Assumptions**
-   - Note data relationships
-   - Document valid ranges
-   - Explain special cases
+4. Documentation:
+   - Document any assumptions
+   - Explain mock data patterns
+   - Keep examples up to date

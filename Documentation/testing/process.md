@@ -1,132 +1,194 @@
 # Testing Process Documentation
 
-## Testing Workflows
+## Overview
 
-### Mock Testing Workflow
-1. Start mock environment:
-   ```bash
-   npm run dev:mock
-   ```
-2. Open test runner:
-   ```
-   http://localhost:3000/comprehensive-test-runner.html
-   ```
-3. Run tests in Mock API Mode
-4. Document results in the test results file
-
-### Live API Testing Workflow
-1. Start full environment:
-   ```bash
-   npm run dev:all
-   ```
-2. Open test runner:
-   ```
-   http://localhost:3000/comprehensive-test-runner.html
-   ```
-3. Switch to Live API Mode
-4. Run tests
-5. Document results in the test results file
-
-## Common Issues and Solutions
-
-### 1. Mock API Server Connection Issues
-
-**Issue**: Frontend fails to connect to the mock API server, showing "Failed to fetch" errors on the metric tiles.
-
-**Solution**: 
-- Ensure the mock server is running on port 3002 (`npm run mock-server` in the backend directory)
-- Check that the frontend is configured to use the mock API URL (`NEXT_PUBLIC_API_URL=http://localhost:3002/api`)
-- Verify there are no CORS issues by checking the browser console
-- If you've stopped the mock server and want to view the dashboard again, restart it with `npm run dev:mock`
-
-### 2. Missing or Incorrect Mock Data
-
-**Issue**: Components display empty or incorrect data.
-
-**Solution**:
-- Check the mock data structure in `mockData.ts` to ensure it matches what the components expect
-- Verify that the mock server endpoints are returning the correct data structure
-- Use browser developer tools to inspect the API responses
-
-### 3. Date Range Selection Issues
-
-**Issue**: Date range selection doesn't update the displayed data.
-
-**Solution**:
-- Since we're using mock data, the date range selection only updates the displayed date range in the UI, not the actual data
-- In a real implementation with live API, the date range would be passed to the API endpoints
-
-### 4. Chart Rendering Issues
-
-**Issue**: Charts don't render correctly or show no data.
-
-**Solution**:
-- Ensure the mock data includes the correct data structure for the charts
-- Check that the chart components are properly configured to use the mock data
-- Verify that the chart libraries (e.g., Recharts) are properly installed and imported
-
-## Testing Environment Setup
-
-### Mock Environment
-1. **Backend Setup**
-   ```bash
-   cd backend
-   npm install
-   npm run mock-server
-   ```
-
-2. **Frontend Setup**
-   ```bash
-   cd frontend
-   npm install
-   NEXT_PUBLIC_API_URL=http://localhost:3002/api NEXT_PUBLIC_API_MOCKING=disabled npm run dev
-   ```
-
-### Live Environment
-1. **Backend Setup**
-   ```bash
-   cd backend
-   npm install
-   KLAVIYO_API_KEY=your_api_key npm run dev
-   ```
-
-2. **Frontend Setup**
-   ```bash
-   cd frontend
-   npm install
-   NEXT_PUBLIC_API_URL=http://localhost:3001/api npm run dev
-   ```
+This document outlines the testing process for the Klaviyo Analytics Dashboard, including unit tests, integration tests, and end-to-end tests.
 
 ## Test Types
 
-### End-to-End Tests
-- Use the comprehensive test runner
-- Test all major user flows
-- Verify data display and interactions
-- Check error handling
+### 1. Unit Tests
+- Located in `__tests__` directories alongside source files
+- Test individual components and functions
+- Run using Jest/Vitest
+- Focus on isolated functionality
 
-### Integration Tests
-- Test API endpoints
-- Verify data transformations
-- Check error responses
-- Test date range handling
+### 2. Integration Tests
+- Test interaction between components
+- Verify API integration points
+- Check data flow through the application
+- Located in `backend/src/tests`
 
-### Unit Tests
-- Test individual components
-- Verify utility functions
-- Test data processing
-- Check edge cases
+### 3. End-to-End Tests
+- Test complete user workflows
+- Verify frontend and backend integration
+- Located in `public/` directory
+- Run in browser using Mocha/Chai
 
-## Test Data Management
+## Date Range Testing
 
-### Mock Data
-- Keep mock data up to date
-- Match production data structure
-- Include edge cases
-- Test with various scenarios
+### Test Coverage
 
-### Live Data
-- Use test account data
-- Avoid modifying production data
-- Test with realistic volumes
-- Include various data types
+The date range tests verify:
+
+1. **Standard Date Ranges**
+   - Last 7 days
+   - Last 30 days (default)
+   - Last 90 days
+   - Data consistency across components
+
+2. **Custom Date Ranges**
+   - Year boundary transitions
+   - Single day selections
+   - Invalid date formats
+   - Future dates
+
+3. **Component Updates**
+   - Overview metrics
+   - Campaign data
+   - Charts and visualizations
+   - Loading states
+
+4. **Error Handling**
+   - Invalid date formats
+   - Future dates
+   - API errors
+   - UI error messages
+
+### Running Date Range Tests
+
+1. Start the development server:
+```bash
+npm run dev
+```
+
+2. Open the test runner:
+```bash
+open public/test-runner.html
+```
+
+3. Monitor test results in the browser
+   - Check console for detailed logs
+   - Verify all test cases pass
+   - Review error messages if any
+
+### Test Files
+
+- `public/mock-date-ranges.js`: Mock data for different date ranges
+- `public/date-range-test.js`: E2E tests for date range functionality
+- `public/e2e-test.js`: General E2E tests including date range integration
+
+## Pre-Live API Testing
+
+Before switching to live Klaviyo API:
+
+1. Run all mock tests:
+   ```bash
+   npm run test:e2e
+   ```
+
+2. Verify date range handling:
+   - Check all standard ranges
+   - Test custom date selections
+   - Verify error handling
+
+3. Document test results:
+   - Screenshot test outcomes
+   - Note any failed cases
+   - Document error scenarios
+
+4. Compare with API documentation:
+   - Verify date format alignment
+   - Check response structure
+   - Confirm error handling matches
+
+## CI/CD Integration
+
+### GitHub Actions Workflow
+
+```yaml
+name: E2E Tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: npm install
+      - name: Run E2E tests
+        run: npm run test:e2e
+```
+
+### Test Requirements
+
+1. All tests must pass before merge
+2. Date range tests are mandatory
+3. Test results must be documented
+4. Failed tests block deployment
+
+## Maintaining Tests
+
+### Best Practices
+
+1. Keep tests up to date:
+   - Update when adding features
+   - Maintain mock data accuracy
+   - Document new test cases
+
+2. Regular test review:
+   - Check for obsolete tests
+   - Update expected results
+   - Verify error scenarios
+
+3. Performance monitoring:
+   - Track test execution time
+   - Optimize slow tests
+   - Monitor resource usage
+
+### Documentation
+
+1. Update test documentation:
+   - New test cases
+   - Changed behaviors
+   - Modified expectations
+
+2. Maintain examples:
+   - Keep code snippets current
+   - Update screenshots
+   - Review error messages
+
+## Troubleshooting
+
+### Common Issues
+
+1. Failed date range tests:
+   - Check date format consistency
+   - Verify mock data structure
+   - Review error handling
+
+2. Inconsistent results:
+   - Check test isolation
+   - Verify setup/teardown
+   - Review async operations
+
+3. Browser compatibility:
+   - Test in multiple browsers
+   - Check date parsing
+   - Verify DOM interactions
+
+### Resolution Steps
+
+1. Isolate the issue:
+   - Run specific test suites
+   - Check console logs
+   - Review network requests
+
+2. Update tests:
+   - Fix broken assertions
+   - Update mock data
+   - Adjust timeouts
+
+3. Document fixes:
+   - Note root causes
+   - Document solutions
+   - Update test cases
