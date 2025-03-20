@@ -7,6 +7,12 @@
   - Verify API key permissions and access levels
   - Document any rate limiting considerations
 
+- [x] **Update mock data implementation**
+  - Updated mock-data.js to use export default pattern for better module compatibility
+  - Modified mockServer.js to handle the data properly
+  - Updated run-with-mock-server.sh to use fixed ports
+  - Created knowledge-transfer document for context
+
 - [ ] **Update API client for live testing**
   - Review `backend/src/services/klaviyoApiClient.ts` to ensure it's ready for live API calls
   - Verify error handling and retry mechanisms

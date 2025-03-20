@@ -5,9 +5,10 @@ Based on our analysis of the codebase, here are some key differences between the
 ## Date Range Filtering
 
 ### Current Mock Implementation
-- The Revenue Overview chart uses hardcoded mock data with fixed date ranges (from 2023-01 to 2023-06) regardless of the selected date range in the UI
-- The date range selector changes the displayed date range in the UI but doesn't actually filter the chart data
-- Mock data remains static regardless of date selection
+- The mock server provides data filtering based on selected date ranges
+- Date range parameters are passed to mock endpoints and filtering is applied
+- The mock server supports standard formats (`last-30-days`, etc.) and custom date ranges
+- Data is filtered to match the requested time period
 
 ### Expected Live Implementation
 - The date range parameter would be passed to the API endpoints

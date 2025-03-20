@@ -234,6 +234,7 @@ For more details, see:
 - [Testing Without Live API Calls](Documentation/testing-without-live-api.md)
 - [Date Range Testing Documentation](Documentation/testing/mock-data.md)
 - [Testing Process Guide](Documentation/testing/process.md)
+- [Knowledge Transfer: Mock vs Live API](Documentation/knowledge-transfer.md)
 
 ## Contributing
 

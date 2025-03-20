@@ -20,8 +20,8 @@ find_available_port() {
 }
 
 # Find available ports
-MOCK_PORT=$(find_available_port 3002)
-FRONTEND_PORT=$(find_available_port 3000)
+MOCK_PORT=3002
+FRONTEND_PORT=3000
 
 # Start the mock server in the background
 echo -e "${YELLOW}Starting mock server on port ${MOCK_PORT}...${NC}"
@@ -35,7 +35,7 @@ sleep 2
 
 # Start the frontend with the mock API URL and explicitly disable MSW
 echo -e "${YELLOW}Starting frontend on port ${FRONTEND_PORT} with mock API URL (MSW disabled)...${NC}"
-PORT=$FRONTEND_PORT NEXT_PUBLIC_API_URL=http://localhost:${MOCK_PORT}/api NEXT_PUBLIC_API_MOCKING=disabled npm run dev &
+NEXT_PUBLIC_API_URL=http://localhost:${MOCK_PORT}/api NEXT_PUBLIC_API_MOCKING=disabled npm run dev &
 FRONTEND_PID=$!
 
 # Function to handle script termination

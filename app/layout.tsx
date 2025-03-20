@@ -13,6 +13,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" style={{ colorScheme: 'dark' }}>
+      <head>
+        {process.env.NODE_ENV === 'development' && (
+          <script src="/mock-data.js" type="module" />
+        )}
+      </head>
       <body>
         {children}
       </body>

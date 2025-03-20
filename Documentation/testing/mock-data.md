@@ -73,12 +73,19 @@ Each date range mock response includes:
 const mockDateRangesScript = document.createElement('script');
 mockDateRangesScript.src = '/mock-date-ranges.js';
 document.head.appendChild(mockDateRangesScript);
+
+// If using ES modules
+import mockData from './mock-data.js';
 ```
 
 ### Accessing Mock Data
 ```javascript
-// Get mock data for a specific date range
+// Get mock data for a specific date range (global variable approach)
 const mockData = window.mockDateRangeResponses[dateRange];
+
+// ES module approach (with export default)
+import mockData from './mock-data.js';
+const dateRangeData = mockData[dateRange];
 ```
 
 ### Date Range Formats
