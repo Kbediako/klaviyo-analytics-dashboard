@@ -1,5 +1,7 @@
 import fetch from 'node-fetch';
 import { DateRange } from '../utils/dateUtils';
+import { JsonApiParams, FilterParam, buildQueryString } from '../utils/jsonApiUtils';
+import rateLimitManager from './rateLimitManager';
 
 /**
  * Klaviyo API Client for making requests to the Klaviyo API
@@ -10,6 +12,8 @@ export class KlaviyoApiClient {
   private apiVersion: string;
   private maxRetries: number;
   private retryDelay: number;
+  private requestQueue: Map<string, Promise<any>> = new Map();
+  private lastRequestTime: number = 0;
 
   /**
    * Create a new Klaviyo API client
@@ -37,46 +41,99 @@ export class KlaviyoApiClient {
   }
 
   /**
-   * Make a GET request to the Klaviyo API with retry mechanism
+   * Make a GET request to the Klaviyo API with retry mechanism and rate limiting
    * 
    * @param endpoint API endpoint (e.g., 'campaigns')
-   * @param params Query parameters
+   * @param params JSON:API parameters
    * @returns Response data
    */
-  async get<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
-    // Static delay between API calls to avoid rate limiting
-    await this.delay(1000);
+  async get<T>(endpoint: string, params: Record<string, string> | JsonApiParams = {}): Promise<T> {
+    // Generate URL with query parameters
+    let url: string;
     
-    let retries = 0;
-    let lastError: Error | null = null;
+    if ('filter' in params || 'sort' in params || 'include' in params || 'fields' in params || 'page' in params) {
+      // If params is a JsonApiParams object, use buildQueryString
+      url = `${this.baseUrl}/${endpoint}${buildQueryString(params as JsonApiParams)}`;
+    } else {
+      // Otherwise, treat as Record<string, string>
+      const queryParams = new URLSearchParams();
+      Object.entries(params as Record<string, string>).forEach(([key, value]) => {
+        queryParams.append(key, value);
+      });
+      url = `${this.baseUrl}/${endpoint}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    }
+    
+    // Create a cache key for request deduplication
+    const cacheKey = url;
+    
+    // Check for in-flight request with the same URL
+    if (this.requestQueue.has(cacheKey)) {
+      console.log(`Using in-flight request for ${endpoint}`);
+      return this.requestQueue.get(cacheKey) as Promise<T>;
+    }
     
     // Add request ID for logging
     const requestId = Math.random().toString(36).substring(2, 9);
     const apiKey = this.apiKey.substring(0, 5) + "..."; // Only show first 5 chars for security
     console.log(`API Request [${requestId}]: ${endpoint} starting with API key: ${apiKey}`);
-    console.log(`API Request [${requestId}]: Parameters:`, params);
-
+    console.log(`API Request [${requestId}]: URL: ${url}`);
+    
+    // Calculate delay based on rate limits
+    const delay = await rateLimitManager.calculateDelay(endpoint);
+    
+    // Ensure minimum time between requests
+    const now = Date.now();
+    const timeToWait = Math.max(0, this.lastRequestTime + delay - now);
+    if (timeToWait > 0) {
+      console.log(`API Request [${requestId}]: Waiting ${timeToWait}ms before request`);
+      await this.delay(timeToWait);
+    }
+    
+    // Create the request promise
+    const requestPromise = this.executeWithRetries<T>(url, endpoint, requestId);
+    
+    // Store in request queue to prevent duplicate in-flight requests
+    this.requestQueue.set(cacheKey, requestPromise);
+    
+    // Update last request time
+    this.lastRequestTime = Date.now();
+    
+    try {
+      return await requestPromise;
+    } finally {
+      // Remove from request queue when done
+      this.requestQueue.delete(cacheKey);
+    }
+  }
+  
+  /**
+   * Execute a request with retries
+   * 
+   * @param url Full URL to request
+   * @param endpoint Original endpoint for logging
+   * @param requestId Request ID for logging
+   * @returns Response data
+   */
+  private async executeWithRetries<T>(url: string, endpoint: string, requestId: string): Promise<T> {
+    let retries = 0;
+    let lastError: Error | null = null;
+    
     while (retries <= this.maxRetries) {
       try {
-        const url = new URL(`${this.baseUrl}/${endpoint}`);
-        
-        // Add query parameters
-        Object.entries(params).forEach(([key, value]) => {
-          url.searchParams.append(key, value);
-        });
-        
         console.log(`API Request [${requestId}]: ${endpoint} attempt ${retries + 1}/${this.maxRetries + 1}`);
-        console.log(`API Request [${requestId}]: Full URL: ${url.toString()}`);
         
         const headers = this.getHeaders();
         console.log(`API Request [${requestId}]: Headers:`, headers);
         
-        const response = await fetch(url.toString(), {
+        const response = await fetch(url, {
           method: 'GET',
           headers: headers,
         });
         
         console.log(`API Request [${requestId}]: Response status:`, response.status);
+        
+        // Update rate limit information from response headers
+        rateLimitManager.updateFromHeaders(endpoint, response.headers);
         
         if (!response.ok) {
           // If rate limited (429), retry after delay with longer backoff
@@ -153,15 +210,16 @@ export class KlaviyoApiClient {
 
   /**
    * Get common headers for Klaviyo API requests
-   * 
+   * Updated to use Bearer token format according to latest Klaviyo API standards
+   *
    * @returns Headers object
    */
   private getHeaders(): Record<string, string> {
     return {
-      'Authorization': `Klaviyo-API-Key ${this.apiKey}`,
+      'Authorization': `Bearer ${this.apiKey}`,
       'Accept': 'application/json',
       'revision': this.apiVersion,
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json'
     };
   }
 
@@ -173,10 +231,22 @@ export class KlaviyoApiClient {
    */
   async getCampaigns(dateRange: DateRange) {
     try {
-      // Get campaigns from Klaviyo API - use v2023-07-15 endpoint structure
+      // Get campaigns from Klaviyo API using JSON:API parameters
       const response = await this.get('api/campaigns', {
-        'filter': `equals(messages.channel,"email")`,
-        'include': 'tags'
+        filter: [
+          {
+            field: 'messages.channel',
+            operator: 'equals',
+            value: 'email'
+          }
+        ],
+        include: ['tags'],
+        fields: {
+          campaign: ['name', 'status', 'created', 'updated', 'archived', 'send_time', 'tags']
+        },
+        page: {
+          size: 50
+        }
       });
       
       console.log('Live API - Campaigns response:', JSON.stringify(response).substring(0, 200) + '...');
@@ -195,10 +265,15 @@ export class KlaviyoApiClient {
    */
   async getFlows() {
     try {
-      // Get flows from Klaviyo API - use v2023-07-15 endpoint structure
+      // Get flows from Klaviyo API using JSON:API parameters
       const response = await this.get('api/flows', {
-        'include': 'tags',
-        'fields[flow]': 'name,status,created,updated,trigger_type,tags'
+        include: ['tags'],
+        fields: {
+          flow: ['name', 'status', 'created', 'updated', 'trigger_type', 'tags']
+        },
+        page: {
+          size: 50
+        }
       });
       
       console.log('Live API - Flows response:', JSON.stringify(response).substring(0, 200) + '...');
@@ -218,15 +293,26 @@ export class KlaviyoApiClient {
    */
   async getFlowMessages(dateRange: DateRange) {
     try {
-      // Format dates for Klaviyo API
-      const startDate = new Date(dateRange.start).toISOString();
-      const endDate = new Date(dateRange.end).toISOString();
-      
-      // Get flow messages from Klaviyo API - use v2023-07-15 endpoint structure
+      // Get flow messages from Klaviyo API using JSON:API parameters
       const response = await this.get('api/flow-messages', {
-        'fields[flow-message]': 'name,content,created,updated,status,position',
-        'filter': `greater-or-equal(created,${startDate}),less-or-equal(created,${endDate})`,
-        'page[size]': '50'
+        filter: [
+          {
+            field: 'created',
+            operator: 'greater-or-equal',
+            value: new Date(dateRange.start)
+          },
+          {
+            field: 'created',
+            operator: 'less-or-equal',
+            value: new Date(dateRange.end)
+          }
+        ],
+        fields: {
+          'flow-message': ['name', 'content', 'created', 'updated', 'status', 'position']
+        },
+        page: {
+          size: 50
+        }
       });
       
       console.log('Live API - Flow Messages response:', JSON.stringify(response).substring(0, 200) + '...');
@@ -245,9 +331,14 @@ export class KlaviyoApiClient {
    */
   async getMetrics() {
     try {
-      // Get metrics from Klaviyo API - use v2023-07-15 endpoint structure
+      // Get metrics from Klaviyo API using JSON:API parameters
       const response = await this.get('api/metrics', {
-        'page[size]': '50'
+        fields: {
+          metric: ['name', 'created', 'updated', 'integration', 'type']
+        },
+        page: {
+          size: 50
+        }
       });
       
       console.log('Live API - Metrics response:', JSON.stringify(response).substring(0, 200) + '...');
@@ -268,15 +359,24 @@ export class KlaviyoApiClient {
    */
   async getMetricAggregates(metricId: string, dateRange: DateRange) {
     try {
-      // Format dates for Klaviyo API
-      const startDate = new Date(dateRange.start).toISOString();
-      const endDate = new Date(dateRange.end).toISOString();
-      
-      // Get metric aggregates from Klaviyo API - use v2023-07-15 endpoint structure
+      // Get metric aggregates from Klaviyo API using JSON:API parameters
       const response = await this.get(`api/metric-aggregates/${metricId}`, {
-        'filter': `greater-or-equal(datetime,${startDate}),less-or-equal(datetime,${endDate})`,
-        'page[size]': '100',
-        'sort': 'datetime'
+        filter: [
+          {
+            field: 'datetime',
+            operator: 'greater-or-equal',
+            value: new Date(dateRange.start)
+          },
+          {
+            field: 'datetime',
+            operator: 'less-or-equal',
+            value: new Date(dateRange.end)
+          }
+        ],
+        sort: ['datetime'],
+        page: {
+          size: 100
+        }
       });
       
       console.log('Live API - Metric Aggregates response:', JSON.stringify(response).substring(0, 200) + '...');
@@ -296,15 +396,26 @@ export class KlaviyoApiClient {
    */
   async getProfiles(dateRange: DateRange) {
     try {
-      // Format dates for Klaviyo API
-      const startDate = new Date(dateRange.start).toISOString();
-      const endDate = new Date(dateRange.end).toISOString();
-      
-      // Get profiles from Klaviyo API - use v2023-07-15 endpoint structure
+      // Get profiles from Klaviyo API using JSON:API parameters
       const response = await this.get('api/profiles', {
-        'fields[profile]': 'email,phone_number,first_name,last_name,created,updated,subscriptions',
-        'filter': `greater-or-equal(created,${startDate}),less-or-equal(created,${endDate})`,
-        'page[size]': '50'
+        filter: [
+          {
+            field: 'created',
+            operator: 'greater-or-equal',
+            value: new Date(dateRange.start)
+          },
+          {
+            field: 'created',
+            operator: 'less-or-equal',
+            value: new Date(dateRange.end)
+          }
+        ],
+        fields: {
+          profile: ['email', 'phone_number', 'first_name', 'last_name', 'created', 'updated', 'subscriptions']
+        },
+        page: {
+          size: 50
+        }
       });
       
       console.log('Live API - Profiles response:', JSON.stringify(response).substring(0, 200) + '...');
@@ -323,10 +434,14 @@ export class KlaviyoApiClient {
    */
   async getSegments() {
     try {
-      // Get segments from Klaviyo API - use v2023-07-15 endpoint structure
+      // Get segments from Klaviyo API using JSON:API parameters
       const response = await this.get('api/segments', {
-        'fields[segment]': 'name,created,updated,profile_count',
-        'page[size]': '50'
+        fields: {
+          segment: ['name', 'created', 'updated', 'profile_count']
+        },
+        page: {
+          size: 50
+        }
       });
       
       console.log('Live API - Segments response:', JSON.stringify(response).substring(0, 200) + '...');
@@ -342,26 +457,33 @@ export class KlaviyoApiClient {
    * Get events from Klaviyo
    * 
    * @param dateRange Date range to filter by
-   * @param filter Additional filter criteria
+   * @param additionalFilters Additional filter parameters
    * @returns Events data
    */
-  async getEvents(dateRange: DateRange, filter: string = '') {
+  async getEvents(dateRange: DateRange, additionalFilters: FilterParam[] = []) {
     try {
-      // Format dates for Klaviyo API
-      const startDate = new Date(dateRange.start).toISOString();
-      const endDate = new Date(dateRange.end).toISOString();
+      // Create base filters for date range
+      const filters: FilterParam[] = [
+        {
+          field: 'datetime',
+          operator: 'greater-or-equal',
+          value: new Date(dateRange.start)
+        },
+        {
+          field: 'datetime',
+          operator: 'less-or-equal',
+          value: new Date(dateRange.end)
+        },
+        ...additionalFilters
+      ];
       
-      // Build filter string
-      let filterStr = `greater-or-equal(datetime,${startDate}),less-or-equal(datetime,${endDate})`;
-      if (filter) {
-        filterStr += `,${filter}`;
-      }
-      
-      // Get events from Klaviyo API - use v2023-07-15 endpoint structure
+      // Get events from Klaviyo API using JSON:API parameters
       const response = await this.get('api/events', {
-        'filter': filterStr,
-        'sort': '-datetime',
-        'page[size]': '50'
+        filter: filters,
+        sort: ['-datetime'],
+        page: {
+          size: 50
+        }
       });
       
       console.log('Live API - Events response:', JSON.stringify(response).substring(0, 200) + '...');
