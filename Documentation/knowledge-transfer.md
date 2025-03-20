@@ -35,6 +35,7 @@ See [Architecture Documentation](./architecture/README.md) for detailed informat
 ### Frontend Components
 - `analytics-dashboard.tsx`: Main dashboard component
 - `revenue-chart.tsx`: Revenue visualization
+- `enhanced-revenue-chart.tsx`: Advanced revenue visualization with forecasting
 - `channel-distribution-chart.tsx`: Channel metrics
 - Various table components for campaigns, flows, and forms
 
@@ -63,6 +64,8 @@ See [Architecture Documentation](./architecture/README.md) for detailed informat
 - `use-flows.ts`: Flow metrics
 - `use-forms.ts`: Form analytics
 - `use-chart-data.ts`: Chart data processing
+- `use-time-series.ts`: Time series data with decomposition and anomaly detection
+- `use-forecast.ts`: Forecast data with confidence intervals and correlation analysis
 
 ## Development Workflow
 
@@ -196,6 +199,20 @@ const metric = await metricRepository.create({
 3. Access analytics through the `/api/analytics/*` endpoints
 4. Customize analysis with query parameters (interval, window size, etc.)
 5. Combine with existing metrics for comprehensive insights
+
+### Working with Forecasting
+1. Use the `use-forecast.ts` hook to fetch forecast data
+2. Configure forecast parameters (method, horizon, etc.)
+3. Visualize forecasts with confidence intervals using `enhanced-revenue-chart.tsx`
+4. Compare different forecasting methods (naive, moving average, linear regression)
+5. Analyze forecast accuracy and adjust parameters as needed
+
+### Working with Time Series
+1. Use the `use-time-series.ts` hook to fetch time series data
+2. Analyze trends, seasonality, and residuals with decomposition
+3. Detect anomalies in time series data
+4. Visualize time series components in charts
+5. Correlate different metrics to identify relationships
 
 ### Working with the Database
 1. Use repository classes for database operations
