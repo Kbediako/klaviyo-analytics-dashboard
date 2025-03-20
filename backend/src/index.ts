@@ -23,6 +23,7 @@ import campaignsRoutes from './routes/campaigns';
 import flowsRoutes from './routes/flows';
 import formsRoutes from './routes/forms';
 import segmentsRoutes from './routes/segments';
+import analyticsRoutes from './routes/analyticsRoutes';
 
 // Initialize Express app
 const app = express();
@@ -61,6 +62,7 @@ const CACHE_TTLS = {
   flows: 1200,      // 20 minutes (increased from 10 minutes)
   forms: 1200,      // 20 minutes (increased from 10 minutes)
   segments: 1200,   // 20 minutes (increased from 10 minutes)
+  analytics: 300,   // 5 minutes for analytics endpoints
 };
 
 // Apply default rate limiter to all API routes
@@ -76,6 +78,7 @@ app.use('/api/campaigns', cacheMiddleware(CACHE_TTLS.campaigns), campaignsRoutes
 app.use('/api/flows', cacheMiddleware(CACHE_TTLS.flows), flowsRoutes);
 app.use('/api/forms', cacheMiddleware(CACHE_TTLS.forms), formsRoutes);
 app.use('/api/segments', cacheMiddleware(CACHE_TTLS.segments), segmentsRoutes);
+app.use('/api/analytics', cacheMiddleware(CACHE_TTLS.analytics), analyticsRoutes);
 
 // Apply stricter rate limits to the health endpoint
 app.use('/api/health', strictRateLimiter);
