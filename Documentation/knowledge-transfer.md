@@ -31,20 +31,29 @@ To transition to the live Klaviyo API:
 1. **Environment Setup**
    - Create a `.env` file in the `/backend` directory with your Klaviyo API credentials:
      ```
-     KLAVIYO_API_KEY=your_api_key_here
+     KLAVIYO_API_KEY=pk_2d109a05c4b7b9bb3b7259ba172e385f2d
      PORT=3001
+     DEBUG=true
      ```
+   - The API key above is pre-configured for this project
    - Ensure you have sufficient permissions in your Klaviyo account
 
-2. **API Client Configuration**
+2. **Important Metric IDs**
+   - The dashboard uses specific Klaviyo metric IDs for accurate data:
+     - **Shopify Placed Order Metric ID:** `WRfUa5` (used for revenue calculations)
+   - These IDs are pre-configured in the service implementations
+
+3. **API Client Configuration**
    - The API client at `/backend/src/services/klaviyoApiClient.ts` handles all Klaviyo API requests
    - Uses proper authentication via API key
    - Implements rate limiting protection and error handling
+   - Includes comprehensive logging for debugging
 
-3. **Running with Live API**
+4. **Running with Live API**
    - Use `./run-with-live-api.sh` to start both the frontend and backend with live API
    - Backend runs on port 3001 and connects to Klaviyo's API
    - Frontend connects to the backend through environment variable: `NEXT_PUBLIC_API_URL=http://localhost:3001/api`
+   - Check backend logs for API request/response details
 
 ## Transitioning Between Mock and Live Data
 

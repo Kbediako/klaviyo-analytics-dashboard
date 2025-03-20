@@ -34,15 +34,21 @@ Even when successful API calls were made, the data wasn't properly displayed in 
 3. Added validation in UI components to check for required properties
 4. Improved error handling and user feedback for data structure issues
 
-## Issue 3: API Key Configuration
+## Issue 3: API Key and Metric IDs Configuration
 
 ### Problem
-The API client wasn't being configured with the correct API key, or the key didn't have the necessary permissions to access all endpoints.
+The API client wasn't being configured with the correct API key, or the key didn't have the necessary permissions to access all endpoints. Additionally, specific metric IDs were required for revenue and other calculations.
 
 ### Solution
 1. Ensured the .env file contains a valid Klaviyo API key with proper access rights
+   ```
+   KLAVIYO_API_KEY=pk_2d109a05c4b7b9bb3b7259ba172e385f2d
+   ```
 2. Added logging for API key configuration (first few characters only, for security)
-3. Verified that the correct API version is being used in headers
+3. Configured specific metric IDs for important metrics:
+   - Shopify Placed Order Metric ID: `WRfUa5` (used for revenue calculations)
+4. Hard-coded important metric IDs in the respective service implementations
+5. Verified that the correct API version is being used in headers (`2023-07-15`)
 
 ## Issue 4: Understanding the Timeframe Data Requirements
 

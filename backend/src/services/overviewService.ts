@@ -52,19 +52,19 @@ export async function getOverviewMetrics(dateRange: DateRange): Promise<Overview
     
     // Extract the metrics we need (revenue, open rate, etc.)
     let metricIds = {
-      revenue: '',
+      // Using the provided Shopify Placed Order Metric ID
+      revenue: 'WRfUa5',
       opened: '',
       clicked: '',
       converted: ''
     };
     
     if (metricsResponse && metricsResponse.data && metricsResponse.data.length > 0) {
-      // Find the metric IDs we need
+      // Find the metric IDs we need for other metrics
       for (const metric of metricsResponse.data) {
         const name = metric.attributes?.name?.toLowerCase() || '';
-        if (name.includes('revenue') || name.includes('placed order')) {
-          metricIds.revenue = metric.id;
-        } else if (name.includes('opened email')) {
+        // We already have revenue metric ID, so just find the others
+        if (name.includes('opened email')) {
           metricIds.opened = metric.id;
         } else if (name.includes('clicked email')) {
           metricIds.clicked = metric.id;
@@ -73,6 +73,8 @@ export async function getOverviewMetrics(dateRange: DateRange): Promise<Overview
         }
       }
     }
+    
+    console.log('Using metrics IDs:', metricIds);
     
     // Get metric aggregates if we have the IDs
     let currentRevenue = 0;

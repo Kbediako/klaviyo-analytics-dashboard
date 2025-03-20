@@ -258,6 +258,7 @@ For more details, see:
 - [Knowledge Transfer: Mock vs Live API](Documentation/knowledge-transfer.md)
 - [Integration Issues Guide](Documentation/troubleshooting/integration-issues.md)
 - [Live API Implementation Guide](Documentation/implementation/live-api-implementation.md)
+- [Klaviyo API Integration Guide](Documentation/implementation/klaviyo-api-integration.md)
 
 ## Contributing
 
