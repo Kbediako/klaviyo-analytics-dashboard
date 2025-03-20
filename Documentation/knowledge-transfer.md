@@ -135,8 +135,10 @@ npm test
 The project includes comprehensive end-to-end tests that verify the integration between frontend and backend:
 
 1. **Test Files**:
-   - `frontend/public/e2e-test.js`: Contains the test cases
-   - `frontend/public/e2e-test-runner.html`: Interactive test runner UI
+   - `public/e2e-test.js`: Contains the test cases
+   - `public/e2e-test-runner.html`: Interactive test runner UI
+   - `public/dashboard.test.js`: Contains mock API responses
+   - `public/test-runner.html`: Basic test runner for unit tests
 
 2. **Test Features**:
    - Backend connectivity verification
