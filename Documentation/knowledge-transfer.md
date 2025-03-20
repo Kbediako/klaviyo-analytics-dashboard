@@ -43,6 +43,13 @@ See [Architecture Documentation](./architecture/README.md) for detailed informat
 - Service layer for each data type (campaigns, flows, forms)
 - Data transformation and caching logic
 
+### Database Components
+- `database/index.ts`: Database connection manager with connection pooling
+- `repositories/metricRepository.ts`: Repository for Klaviyo metrics
+- `repositories/eventRepository.ts`: Repository for Klaviyo events
+- TimescaleDB for time-series data optimization
+- Migration scripts for database schema management
+
 ### React Hooks
 - `use-overview-metrics.ts`: Dashboard metrics
 - `use-campaigns.ts`: Campaign data
@@ -81,8 +88,12 @@ KLAVIYO_API_VERSION=2023-07-15
 PORT=3001
 NODE_ENV=development
 
-# Database Configuration (Enhanced Architecture)
-POSTGRES_URL=postgresql://user:pass@localhost:5432/klaviyo_analytics
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=klaviyo
+DB_PASSWORD=klaviyo_pass
+DB_NAME=klaviyo_analytics
 REDIS_URL=redis://localhost:6379
 ```
 
@@ -92,15 +103,56 @@ REDIS_URL=redis://localhost:6379
    npm install
    ```
 
-2. Start development server:
+2. Start the database:
+   ```bash
+   ./start-db.sh
+   ```
+
+3. Start development server:
    ```bash
    npm run dev
    ```
 
-3. Run with mock data:
+4. Run with mock data:
    ```bash
    ./run-with-mock-server.sh
    ```
+
+## Database Setup
+
+### Docker Setup
+The project uses Docker Compose to run PostgreSQL with TimescaleDB:
+
+```bash
+# Start the database
+docker-compose up -d timescaledb
+
+# Run migrations
+node db/run-migrations.js
+```
+
+### Database Schema
+The database schema includes:
+
+1. **klaviyo_metrics**: Stores information about Klaviyo metrics
+2. **klaviyo_profiles**: Stores information about Klaviyo customer profiles
+3. **klaviyo_events**: Stores Klaviyo events with time-series optimization
+4. **klaviyo_aggregated_metrics**: Stores pre-aggregated metrics for faster queries
+
+### Repository Pattern
+The project uses the repository pattern for database access:
+
+```typescript
+// Example: Finding events by metric ID
+const events = await eventRepository.findByMetricId('metric-123');
+
+// Example: Creating a new metric
+const metric = await metricRepository.create({
+  id: 'metric-456',
+  name: 'New Metric',
+  integration_category: 'email'
+});
+```
 
 ## API Integration
 
@@ -125,6 +177,12 @@ REDIS_URL=redis://localhost:6379
 3. Add frontend components
 4. Update tests
 
+### Working with the Database
+1. Use repository classes for database operations
+2. Implement transaction handling for multi-step operations
+3. Use time-series functions for time-based analytics
+4. Implement proper error handling
+
 ### Implementing New Features
 1. Review architecture documentation
 2. Follow implementation phases
@@ -136,6 +194,7 @@ REDIS_URL=redis://localhost:6379
 - Verify rate limiting
 - Validate data transformations
 - Review error handling
+- Check database connection issues
 
 ## Best Practices
 
@@ -144,6 +203,13 @@ REDIS_URL=redis://localhost:6379
 - Follow existing patterns
 - Document complex logic
 - Keep components focused
+
+### Database Performance
+- Use TimescaleDB hypertables for time-series data
+- Create appropriate indexes for common queries
+- Use pre-aggregated metrics for analytics
+- Implement connection pooling
+- Use transactions for data integrity
 
 ### Performance
 - Implement appropriate caching
@@ -173,6 +239,7 @@ See [Architecture Documentation](./architecture/README.md) for detailed implemen
 - [Architecture Documentation](./architecture/README.md)
 - [Implementation Phases](./implementation/phases/README.md)
 - [Klaviyo API Docs](https://developers.klaviyo.com)
+- [Database Documentation](../db/README.md)
 
 ### Team Contacts
 - Frontend Lead: [Name]
@@ -202,3 +269,4 @@ See [Implementation Phases README](./implementation/phases/README.md#risk-manage
 - Data Volume handling
 - Performance optimization
 - Integration complexity management
+- Database scaling considerations
