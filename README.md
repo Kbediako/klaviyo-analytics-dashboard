@@ -13,11 +13,11 @@ klaviyo-analytics-dashboard/
 ├── app/                # Next.js app directory
 ├── components/         # UI components
 ├── public/             # Static assets
-├── styles/             # Global styles
+├── styles/            # Global styles
 ├── analytics-dashboard.tsx # Main dashboard component
-├── hooks/              # React hooks for data fetching
-├── lib/                # Utility functions and API client
-└── backend/            # Node.js/Express backend (API)
+├── hooks/             # React hooks for data fetching
+├── lib/               # Utility functions and API client
+└── backend/           # Node.js/Express backend (API)
 ```
 
 ## Features
@@ -32,6 +32,11 @@ klaviyo-analytics-dashboard/
 - **Form Analytics**: Form submission rates and conversion data
 - **Segment Analysis**: Customer segment performance and growth
 - **Client-Side Caching**: Improved performance with local caching of API responses
+- **Date Range Support**: 
+  - Standard ranges (7, 30, 90 days)
+  - Custom date selection
+  - Year boundary handling
+  - Error validation
 
 ## Tech Stack
 
@@ -215,7 +220,20 @@ The project includes several options for testing without making live API calls t
 
 3. **Unit Tests with Mocks**: All unit tests use mocks to avoid making real API calls.
 
-For more details, see the [Testing Without Live API Calls](Documentation/testing-without-live-api.md) documentation.
+4. **Date Range Testing**: Comprehensive test suite for date range functionality:
+   - Standard date ranges (7, 30, 90 days)
+   - Custom date selections
+   - Edge cases (year boundaries, single days)
+   - Error scenarios
+   ```bash
+   # Run date range tests
+   open public/test-runner.html
+   ```
+
+For more details, see:
+- [Testing Without Live API Calls](Documentation/testing-without-live-api.md)
+- [Date Range Testing Documentation](Documentation/testing/mock-data.md)
+- [Testing Process Guide](Documentation/testing/process.md)
 
 ## Contributing
 
