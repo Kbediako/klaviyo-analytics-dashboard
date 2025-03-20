@@ -44,6 +44,8 @@ See [Architecture Documentation](./architecture/README.md) for detailed informat
 - `scheduler/index.ts`: Schedules regular data synchronization jobs
 - Service layer for each data type (campaigns, flows, forms)
 - Data transformation and caching logic
+- `analytics/timeSeriesAnalyzer.ts`: Time series analysis and decomposition
+- `analytics/forecastService.ts`: Forecasting models with confidence intervals
 
 ### Database Components
 - `database/index.ts`: Database connection manager with connection pooling
@@ -53,6 +55,7 @@ See [Architecture Documentation](./architecture/README.md) for detailed informat
 - `repositories/campaignRepository.ts`: Repository for Klaviyo campaigns
 - TimescaleDB for time-series data optimization
 - Migration scripts for database schema management
+- Aggregated metrics for faster time-series queries
 
 ### React Hooks
 - `use-overview-metrics.ts`: Dashboard metrics
@@ -173,6 +176,11 @@ const metric = await metricRepository.create({
 - `/api/flows`: Flow analytics
 - `/api/forms`: Form metrics
 - `/api/segments`: Segment analysis
+- `/api/analytics/timeseries/:metricId`: Time series data
+- `/api/analytics/decomposition/:metricId`: Time series decomposition
+- `/api/analytics/anomalies/:metricId`: Anomaly detection
+- `/api/analytics/forecast/:metricId`: Forecasting with multiple methods
+- `/api/analytics/correlation`: Correlation between metrics
 
 ## Common Tasks
 
@@ -181,6 +189,13 @@ const metric = await metricRepository.create({
 2. Create/update service methods
 3. Add frontend components
 4. Update tests
+
+### Working with Analytics
+1. Use `timeSeriesAnalyzer.ts` for time-series analysis
+2. Use `forecastService.ts` for generating forecasts
+3. Access analytics through the `/api/analytics/*` endpoints
+4. Customize analysis with query parameters (interval, window size, etc.)
+5. Combine with existing metrics for comprehensive insights
 
 ### Working with the Database
 1. Use repository classes for database operations
@@ -234,9 +249,11 @@ const metric = await metricRepository.create({
 
 See [Architecture Documentation](./architecture/README.md) for detailed implementation plans for:
 1. Data persistence layer
-2. Analytics foundation
-3. Forecasting capabilities
+2. Analytics foundation (implemented in Phase 4)
+3. Forecasting capabilities (implemented in Phase 4)
 4. Advanced analytics
+5. Machine learning model integration
+6. Real-time analytics dashboards
 
 ## Support and Resources
 
