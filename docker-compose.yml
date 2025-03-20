@@ -1,0 +1,16 @@
+version: '3'
+
+services:
+  timescaledb:
+    image: timescale/timescaledb:latest-pg14
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=klaviyo
+      - POSTGRES_PASSWORD=klaviyo_pass
+      - POSTGRES_DB=klaviyo_analytics
+    volumes:
+      - timescaledb_data:/var/lib/postgresql/data
+
+volumes:
+  timescaledb_data:
