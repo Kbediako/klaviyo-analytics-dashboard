@@ -94,13 +94,47 @@ This document outlines the implementation of live Klaviyo API integration for th
    - Added real-time metrics calculation (revenue, open rates, etc.)
    - Enhanced channel distribution data with proper fallbacks
 
-## Next Steps
-1. Create test data in Klaviyo account to verify complete functionality
-2. Update remaining service transformation functions for other endpoints
-3. Implement proper metrics retrieval for real statistics using Klaviyo Reporting API
-4. Complete end-to-end testing with live API
-5. Document any discrepancies between mock and live data
-6. Add request validation and error feedback on the UI
+## Next Steps Checklist
+
+### Testing
+- [ ] Configure a test Klaviyo account with sufficient test data
+- [ ] Verify API key has appropriate permissions for all endpoints
+- [ ] Test with various date ranges (today, last week, last month)
+- [ ] Verify 405 error fixes for flows, forms, and segments endpoints
+- [ ] Confirm campaign metrics are consistent and displaying correctly
+- [ ] Check overview metrics with real API data
+- [ ] Test error handling and fallback behaviors
+- [ ] Run comprehensive end-to-end tests with live API
+
+### API Development
+- [ ] Update remaining service transformation functions for other endpoints
+- [ ] Implement proper metrics retrieval using Klaviyo Reporting API
+- [ ] Add specific metric ID mapping if needed for different accounts
+- [ ] Optimize API request batching to reduce rate limiting
+- [ ] Enhance exponential backoff strategies
+- [ ] Improve caching mechanisms for better performance
+- [ ] Add request throttling for heavy usage scenarios
+- [ ] Implement more robust API response validation
+
+### UI Improvements
+- [ ] Add more detailed loading states for all components
+- [ ] Enhance error feedback on the UI
+- [ ] Add "Live API" indicator in dashboard
+- [ ] Implement cache clearing functionality
+- [ ] Add proper status messages for API connectivity
+- [ ] Create visual feedback for rate limiting events
+- [ ] Add request timing information for debugging
+- [ ] Implement specific error handling for common API issues
+
+### Documentation
+- [ ] Document any discrepancies between mock and live data
+- [ ] Update API reference documentation with real endpoint examples
+- [ ] Create detailed Klaviyo API integration guide
+- [ ] Document metric ID mapping if implemented
+- [ ] Add detailed rate limit handling documentation
+- [ ] Create troubleshooting section for common issues
+- [ ] Update implementation documentation with latest changes
+- [ ] Add performance optimization tips for production use
 
 ## Running with Live API
 To run the application with live API integration:
