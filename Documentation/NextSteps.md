@@ -2,28 +2,38 @@
 
 Based on our end-to-end testing with mock data, we've identified several areas for improvement and next steps. This document outlines the specific actions needed to address these findings and prepare for live API testing.
 
-## 1. Fix Date Range Filtering for Charts
+## 1. ✓ Fix Date Range Filtering for Charts
 
-### High Priority Tasks
+### Completed Tasks
 
-- [ ] **Modify the `useRevenueChartData` hook in `hooks/use-chart-data.ts`**
-  - Update the hook to properly use the `dateRange` parameter
-  - Replace hardcoded date ranges with dynamic filtering based on the selected date range
-  - Ensure the chart data reflects the time period selected by the user
+- [x] **Fixed API endpoint paths in `hooks/use-chart-data.ts`**
+  - Changed '/revenue' to '/charts/revenue'
+  - Changed '/distribution' to '/charts/distribution'
+  - Updated other chart endpoints to use the '/charts/' prefix
+  - Verified that all chart endpoints are working correctly
 
-- [ ] **Update the mock API server to support date range filtering**
-  - Modify `backend/src/tests/mockServer.ts` to filter chart data based on the date range parameter
-  - Add logic to generate appropriate data points for different date ranges
+- [x] **Updated mock server configuration**
+  - Disabled MSW in run-with-mock-server.sh to prevent request interception
+  - Verified that requests are reaching the mock server correctly
+  - Confirmed proper handling of date range parameters
 
-- [ ] **Add unit tests for date range filtering**
-  - Create tests that verify charts display correct data for different date ranges
-  - Test edge cases like single-day ranges and custom date ranges
+- [x] **Verified date range filtering functionality**
+  - Tested different date range selections
+  - Confirmed data is being filtered correctly
+  - Validated chart updates when date range changes
+
+### Next Steps
+
+- [ ] **Add comprehensive tests**
+  - Add unit tests for date range filtering in charts
+  - Test edge cases (single-day ranges, custom ranges)
+  - Add integration tests for chart components
 
 ## 2. Prepare for Live API Testing
 
 ### Setup Tasks
 
-- [ ] **Configure environment for live API testing**
+- [x] **Configure environment for live API testing**
   - Create a `.env` file in the backend directory with a valid Klaviyo API key
   - Verify API key permissions and access levels
   - Document any rate limiting considerations

@@ -27,12 +27,14 @@ const mockData = {
   // Chart data for visualizations
   charts: {
     revenueOverTime: [
-      { date: '2023-01', campaigns: 4200, flows: 3100, forms: 1800, other: 950 },
-      { date: '2023-02', campaigns: 4500, flows: 3300, forms: 1900, other: 1000 },
-      { date: '2023-03', campaigns: 4800, flows: 3500, forms: 2000, other: 1050 },
-      { date: '2023-04', campaigns: 5100, flows: 3700, forms: 2100, other: 1100 },
-      { date: '2023-05', campaigns: 5400, flows: 3900, forms: 2200, other: 1150 },
-      { date: '2023-06', campaigns: 5700, flows: 4100, forms: 2300, other: 1200 }
+      { date: '2025-03-12', campaigns: 4700, flows: 3400, forms: 1950, other: 1025 },
+      { date: '2025-03-13', campaigns: 4800, flows: 3500, forms: 2000, other: 1050 },
+      { date: '2025-03-14', campaigns: 4900, flows: 3600, forms: 2050, other: 1075 },
+      { date: '2025-03-15', campaigns: 5000, flows: 3700, forms: 2100, other: 1100 },
+      { date: '2025-03-16', campaigns: 5100, flows: 3800, forms: 2150, other: 1125 },
+      { date: '2025-03-17', campaigns: 5200, flows: 3900, forms: 2200, other: 1150 },
+      { date: '2025-03-18', campaigns: 5300, flows: 4000, forms: 2250, other: 1175 },
+      { date: '2025-03-19', campaigns: 5400, flows: 4100, forms: 2300, other: 1200 }
     ],
     channelDistribution: [
       { name: 'Campaigns', value: 42 },
@@ -150,8 +152,16 @@ const mockData = {
 function createMockServer() {
   const app = express();
   
-  // Enable CORS for all routes
-  app.use(cors());
+  // Enable CORS for all routes with proper options
+  app.use(cors({
+    origin: ['http://localhost:3000', 'http://localhost:3001'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+  }));
+
+  // Handle preflight requests
+  app.options('*', cors());
   
   // Log all requests
   app.use((req: Request, _res: Response, next) => {
@@ -159,60 +169,189 @@ function createMockServer() {
     next();
   });
 
-  // Overview endpoint
-  app.get('/api/overview', (_req: Request, res: Response) => {
-    res.json(mockData.overview);
-  });
-
-  // Campaigns endpoint
-  app.get('/api/campaigns', (_req: Request, res: Response) => {
-    res.json(mockData.campaigns);
-  });
-
-  // Flows endpoint
-  app.get('/api/flows', (_req: Request, res: Response) => {
-    res.json(mockData.flows);
-  });
-
-  // Forms endpoint
-  app.get('/api/forms', (_req: Request, res: Response) => {
-    res.json(mockData.forms);
-  });
-
-  // Segments endpoint
-  app.get('/api/segments', (_req: Request, res: Response) => {
-    res.json(mockData.segments);
-  });
-
-  // Charts endpoint
-  app.get('/api/charts', (_req: Request, res: Response) => {
-    res.json(mockData.charts);
-  });
-
-  // Individual chart endpoints
-  app.get('/api/charts/revenue', (_req: Request, res: Response) => {
-    res.json(mockData.charts.revenueOverTime);
-  });
-
-  app.get('/api/charts/distribution', (_req: Request, res: Response) => {
-    res.json(mockData.charts.channelDistribution);
-  });
-
-  app.get('/api/charts/top-segments', (_req: Request, res: Response) => {
-    res.json(mockData.charts.topSegments);
-  });
-
-  app.get('/api/charts/top-flows', (_req: Request, res: Response) => {
-    res.json(mockData.charts.topFlows);
-  });
-
-  app.get('/api/charts/top-forms', (_req: Request, res: Response) => {
-    res.json(mockData.charts.topForms);
-  });
+  // Helper function to filter data by date range
+  const filterDataByDateRange = (data: any[], dateRange: string | undefined, dateField: string = 'date') => {
+    if (!dateRange) {
+      return data;
+    }
+    
+    // Handle predefined date ranges
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    let startDate: Date;
+    let endDate: Date = today;
+    
+    console.log('Filtering with date range:', dateRange);
+    console.log('Current date:', today.toISOString());
+    
+    switch (dateRange) {
+      case 'last-7-days':
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - 7);
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      case 'last-30-days':
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - 30);
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      case 'last-90-days':
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - 90);
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      case 'this-month':
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      case 'last-month':
+        startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        endDate = new Date(today.getFullYear(), today.getMonth(), 0);
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      case 'this-year':
+        startDate = new Date(today.getFullYear(), 0, 1);
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      default:
+        // Handle custom date range format: 'YYYY-MM-DD,YYYY-MM-DD'
+        if (dateRange.includes(',')) {
+          const [start, end] = dateRange.split(',');
+          startDate = new Date(start);
+          endDate = new Date(end);
+          startDate.setHours(0, 0, 0, 0);
+          endDate.setHours(23, 59, 59, 999);
+        } else {
+          // Default to last 30 days if format is not recognized
+          startDate = new Date(today);
+          startDate.setDate(today.getDate() - 30);
+          startDate.setHours(0, 0, 0, 0);
+          endDate.setHours(23, 59, 59, 999);
+        }
+    }
+    
+    console.log('Date range:', {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString()
+    });
+    
+    // For data with date field, filter by date range
+    if (data.length > 0 && data[0][dateField]) {
+      const filteredData = data.filter(item => {
+        const itemDate = new Date(item[dateField]);
+        itemDate.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
+        const result = itemDate >= startDate && itemDate <= endDate;
+        console.log('Filtering item:', {
+          date: item[dateField],
+          itemDate: itemDate.toISOString(),
+          included: result
+        });
+        return result;
+      });
+      console.log('Filtered data length:', filteredData.length);
+      return filteredData;
+    }
+    
+    // For data without date field, return all data
+    return data;
+  };
 
   // Health check endpoint
   app.get('/api/health', (_req: Request, res: Response) => {
     res.json({ status: 'ok', mode: 'mock' });
+  });
+
+  // Overview endpoint
+  app.get('/api/overview', (_req: Request, res: Response) => {
+    // Add artificial delay to simulate network latency
+    setTimeout(() => {
+      res.json(mockData.overview);
+    }, 200);
+  });
+
+  // Campaigns endpoint
+  app.get('/api/campaigns', (_req: Request, res: Response) => {
+    setTimeout(() => {
+      res.json(mockData.campaigns);
+    }, 200);
+  });
+
+  // Flows endpoint
+  app.get('/api/flows', (_req: Request, res: Response) => {
+    setTimeout(() => {
+      res.json(mockData.flows);
+    }, 200);
+  });
+
+  // Forms endpoint
+  app.get('/api/forms', (_req: Request, res: Response) => {
+    setTimeout(() => {
+      res.json(mockData.forms);
+    }, 200);
+  });
+
+  // Segments endpoint
+  app.get('/api/segments', (_req: Request, res: Response) => {
+    setTimeout(() => {
+      res.json(mockData.segments);
+    }, 200);
+  });
+
+  // Charts endpoint
+  app.get('/api/charts', (_req: Request, res: Response) => {
+    setTimeout(() => {
+      res.json(mockData.charts);
+    }, 200);
+  });
+
+  // Chart endpoints
+  app.get('/api/charts/revenue', (req: Request, res: Response) => {
+    const dateRange = req.query.dateRange as string | undefined;
+    console.log('Revenue data request with date range:', dateRange);
+    try {
+      const data = mockData.charts.revenueOverTime;
+      console.log('Revenue data before filtering:', data);
+      const filteredData = filterDataByDateRange(data, dateRange);
+      console.log('Revenue data after filtering:', filteredData);
+      res.json(filteredData);
+    } catch (error) {
+      console.error('Error processing revenue data:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/charts/distribution', (req: Request, res: Response) => {
+    console.log('Distribution data request');
+    setTimeout(() => {
+      const data = mockData.charts.channelDistribution;
+      console.log('Sending distribution data:', data);
+      res.json(data);
+    }, 200);
+  });
+
+  app.get('/api/charts/top-segments', (req: Request, res: Response) => {
+    setTimeout(() => {
+      res.json(mockData.charts.topSegments);
+    }, 200);
+  });
+
+  app.get('/api/charts/top-flows', (req: Request, res: Response) => {
+    setTimeout(() => {
+      res.json(mockData.charts.topFlows);
+    }, 200);
+  });
+
+  app.get('/api/charts/top-forms', (req: Request, res: Response) => {
+    setTimeout(() => {
+      res.json(mockData.charts.topForms);
+    }, 200);
   });
 
   // Error simulation endpoint
@@ -242,7 +381,7 @@ function createMockServer() {
  * Start the mock server if this file is run directly
  */
 if (require.main === module) {
-  const PORT = process.env.MOCK_PORT || 3002;
+  const PORT = process.env.PORT || 3002;
   const app = createMockServer();
   
   app.listen(PORT, () => {

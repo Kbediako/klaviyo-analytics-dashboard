@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 /**
  * Interface for API query options
@@ -90,13 +90,19 @@ export function useApiQuery<T>(
   const [isError, setIsError] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
 
+  // Create a stable reference for the query function
+  const queryRef = useRef(queryFn);
+  useEffect(() => {
+    queryRef.current = queryFn;
+  }, [queryFn]);
+
   const fetchData = useCallback(async (): Promise<T> => {
     setIsFetching(true);
     setIsError(false);
     setError(null);
 
     try {
-      const result = await queryFn();
+      const result = await queryRef.current();
       setData(result);
       setIsLoading(false);
       setIsFetching(false);
@@ -119,7 +125,7 @@ export function useApiQuery<T>(
 
       throw errorObj;
     }
-  }, [queryFn, onSuccess, onError]);
+  }, [onSuccess, onError]);
 
   // Initial fetch
   useEffect(() => {
