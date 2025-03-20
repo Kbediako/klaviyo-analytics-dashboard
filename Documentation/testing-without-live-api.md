@@ -223,10 +223,19 @@ export default {
 cd backend
 npm run mock-server
 
-# In a separate terminal, start the frontend with the mock API URL
+# In a separate terminal, start the frontend with the mock API URL and explicitly disable MSW
 cd ..
-NEXT_PUBLIC_API_URL=http://localhost:3002/api npm run dev
+NEXT_PUBLIC_API_URL=http://localhost:3002/api NEXT_PUBLIC_API_MOCKING=disabled npm run dev
 ```
+
+Alternatively, you can use the provided script that handles this for you:
+
+```bash
+# From the project root
+./run-with-mock-server.sh
+```
+
+This script starts both the mock server and the frontend with the correct environment variables, including explicitly disabling MSW to prevent it from intercepting requests intended for the mock server.
 
 ## 4. MSW (Mock Service Worker)
 

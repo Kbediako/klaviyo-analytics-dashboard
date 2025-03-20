@@ -33,9 +33,9 @@ cd ..
 # Wait for the mock server to start
 sleep 2
 
-# Start the frontend with the mock API URL
-echo -e "${YELLOW}Starting frontend on port ${FRONTEND_PORT} with mock API URL...${NC}"
-PORT=$FRONTEND_PORT NEXT_PUBLIC_API_URL=http://localhost:${MOCK_PORT}/api npm run dev &
+# Start the frontend with the mock API URL and explicitly disable MSW
+echo -e "${YELLOW}Starting frontend on port ${FRONTEND_PORT} with mock API URL (MSW disabled)...${NC}"
+PORT=$FRONTEND_PORT NEXT_PUBLIC_API_URL=http://localhost:${MOCK_PORT}/api NEXT_PUBLIC_API_MOCKING=disabled npm run dev &
 FRONTEND_PID=$!
 
 # Function to handle script termination

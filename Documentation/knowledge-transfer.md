@@ -32,11 +32,11 @@ The project includes two methods for mocking API requests:
 
 When running the application with the mock server:
 ```bash
-# Use run-with-mock-server.sh (MSW disabled)
+# Use run-with-mock-server.sh (MSW explicitly disabled)
 ./run-with-mock-server.sh
 
 # Or manually with environment variables
-PORT=3000 NEXT_PUBLIC_API_URL=http://localhost:3002/api npm run dev
+PORT=3000 NEXT_PUBLIC_API_URL=http://localhost:3002/api NEXT_PUBLIC_API_MOCKING=disabled npm run dev
 ```
 
 When running with MSW:

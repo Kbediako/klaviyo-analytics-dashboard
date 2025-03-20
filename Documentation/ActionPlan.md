@@ -153,6 +153,7 @@ This action plan outlines the steps needed to implement the Klaviyo Analytics Da
   - [x] Implement chart and visualization mock data
   - [x] Add dedicated endpoints for chart data in mock server
   - [x] Document visualization testing approaches
+  - [x] Fix MSW interference with mock server by explicitly disabling MSW in run-with-mock-server.sh
 
 - [ ] **Comprehensive End-to-End Testing**
   - [x] Run end-to-end tests with mock data
@@ -224,8 +225,8 @@ This action plan outlines the steps needed to implement the Klaviyo Analytics Da
   - [ ] Develop visualization components for predictive data
 
 - [ ] **Chart Improvements**
-  - [ ] Fix date range filtering for Revenue Overview chart
-  - [ ] Ensure chart data reflects the selected time period
+  - [x] Fix date range filtering for Revenue Overview chart
+  - [x] Ensure chart data reflects the selected time period
   - [ ] Add more granular time period options (daily, weekly, monthly)
 
 ## Notes on Progress Tracking
