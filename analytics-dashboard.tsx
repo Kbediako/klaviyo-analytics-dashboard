@@ -1,6 +1,49 @@
 "use client"
 
 import { useState } from "react"
+import { useRevenueChartData, useChannelDistributionData, useTopSegmentsData, useTopFlowsData, useTopFormsData } from "@/hooks/use-chart-data"
+import { useCampaigns } from "@/hooks/use-campaigns"
+import { useFlows } from "@/hooks/use-flows"
+import { useForms } from "@/hooks/use-forms"
+import { useOverviewMetrics } from "@/hooks/use-overview-metrics"
+import { RevenueChart } from "@/components/revenue-chart"
+import { ChannelDistributionChart } from "@/components/channel-distribution-chart"
+import { MetricCardSkeleton } from "@/components/metric-card-skeleton"
+import { 
+  OverviewMetrics, 
+  RevenueDataPoint, 
+  ChannelDataPoint, 
+  TopSegmentData, 
+  TopFlowData, 
+  TopFormData,
+  Campaign,
+  Flow,
+  Form
+} from "@/lib/api-client"
+
+interface RevenueChartProps {
+  data: RevenueDataPoint[];
+}
+
+interface ChannelDistributionChartProps {
+  data: ChannelDataPoint[];
+}
+
+interface MetricCardProps {
+  title: string;
+  value: string | number;
+  change: string;
+  trend: 'up' | 'down';
+  icon: React.ReactNode;
+  description: string;
+  color: 'blue' | 'indigo' | 'violet' | 'emerald' | 'amber';
+}
+
+interface ChannelItemProps {
+  name: string;
+  value: string;
+  color: string;
+}
 import {
   BarChart,
   LineChart,
@@ -31,6 +74,18 @@ import { Separator } from "@/components/ui/separator"
 
 export default function AnalyticsDashboard() {
   const [dateRange, setDateRange] = useState("last-30-days")
+  const [activeTab, setActiveTab] = useState("overview")
+  
+  // Fetch data using hooks
+  const { data: overviewMetrics, isLoading: isLoadingOverview } = useOverviewMetrics({ dateRange })
+  const { data: revenueData, isLoading: isLoadingRevenue, error: revenueError } = useRevenueChartData({ dateRange })
+  const { data: distributionData, isLoading: isLoadingDistribution, error: distributionError } = useChannelDistributionData({ dateRange })
+  const { data: topSegments, isLoading: isLoadingSegments, error: segmentsError } = useTopSegmentsData({ dateRange })
+  const { data: topFlows, isLoading: isLoadingFlows, error: flowsError } = useTopFlowsData({ dateRange })
+  const { data: topForms, isLoading: isLoadingForms, error: formsError } = useTopFormsData({ dateRange })
+  const { data: campaignsData, isLoading: isLoadingCampaigns } = useCampaigns({ dateRange })
+  const { data: flowsData, isLoading: isLoadingFlowsData } = useFlows({ dateRange })
+  const { data: formsData, isLoading: isLoadingFormsData } = useForms({ dateRange })
 
   return (
     <div className="flex min-h-screen flex-col bg-muted/40">
@@ -82,45 +137,56 @@ export default function AnalyticsDashboard() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          <MetricCard
-            title="Total Revenue"
-            value="$42,582"
-            change="+12.5%"
-            trend="up"
-            icon={<DollarSign className="h-4 w-4" />}
-            description="vs previous period"
-            color="emerald"
-          />
-          <MetricCard
-            title="Active Subscribers"
-            value="24,853"
-            change="+5.1%"
-            trend="up"
-            icon={<Users className="h-4 w-4" />}
-            description="vs previous period"
-            color="blue"
-          />
-          <MetricCard
-            title="Conversion Rate"
-            value="18.5%"
-            change="-1.2%"
-            trend="down"
-            icon={<ShoppingCart className="h-4 w-4" />}
-            description="vs previous period"
-            color="violet"
-          />
-          <MetricCard
-            title="Form Submissions"
-            value="3,842"
-            change="+8.3%"
-            trend="up"
-            icon={<FormInput className="h-4 w-4" />}
-            description="vs previous period"
-            color="amber"
-          />
+          {isLoadingOverview ? (
+            <>
+              <MetricCardSkeleton />
+              <MetricCardSkeleton />
+              <MetricCardSkeleton />
+              <MetricCardSkeleton />
+            </>
+          ) : (
+            <>
+              <MetricCard
+                title="Total Revenue"
+                value={overviewMetrics?.revenue?.current ? `$${overviewMetrics.revenue.current.toLocaleString()}` : '$0'}
+                change={overviewMetrics?.revenue?.change !== undefined ? `${overviewMetrics.revenue.change > 0 ? '+' : ''}${overviewMetrics.revenue.change}%` : '0%'}
+                trend={overviewMetrics?.revenue?.change ? overviewMetrics.revenue.change > 0 ? 'up' : 'down' : 'down'}
+                icon={<DollarSign className="h-4 w-4" />}
+                description="vs previous period"
+                color="emerald"
+              />
+              <MetricCard
+                title="Active Subscribers"
+                value={overviewMetrics?.subscribers?.current ? overviewMetrics.subscribers.current.toLocaleString() : '0'}
+                change={overviewMetrics?.subscribers?.change !== undefined ? `${overviewMetrics.subscribers.change > 0 ? '+' : ''}${overviewMetrics.subscribers.change}%` : '0%'}
+                trend={overviewMetrics?.subscribers?.change ? overviewMetrics.subscribers.change > 0 ? 'up' : 'down' : 'down'}
+                icon={<Users className="h-4 w-4" />}
+                description="vs previous period"
+                color="blue"
+              />
+              <MetricCard
+                title="Conversion Rate"
+                value={overviewMetrics?.conversionRate?.current ? `${overviewMetrics.conversionRate.current}%` : '0%'}
+                change={overviewMetrics?.conversionRate?.change !== undefined ? `${overviewMetrics.conversionRate.change > 0 ? '+' : ''}${overviewMetrics.conversionRate.change}%` : '0%'}
+                trend={overviewMetrics?.conversionRate?.change ? overviewMetrics.conversionRate.change > 0 ? 'up' : 'down' : 'down'}
+                icon={<ShoppingCart className="h-4 w-4" />}
+                description="vs previous period"
+                color="violet"
+              />
+              <MetricCard
+                title="Form Submissions"
+                value={overviewMetrics?.formSubmissions?.current ? overviewMetrics.formSubmissions.current.toLocaleString() : '0'}
+                change={overviewMetrics?.formSubmissions?.change !== undefined ? `${overviewMetrics.formSubmissions.change > 0 ? '+' : ''}${overviewMetrics.formSubmissions.change}%` : '0%'}
+                trend={overviewMetrics?.formSubmissions?.change ? overviewMetrics.formSubmissions.change > 0 ? 'up' : 'down' : 'down'}
+                icon={<FormInput className="h-4 w-4" />}
+                description="vs previous period"
+                color="amber"
+              />
+            </>
+          )}
         </div>
 
-        <Tabs defaultValue="overview" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full max-w-md grid-cols-4 mb-2">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
@@ -145,10 +211,11 @@ export default function AnalyticsDashboard() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-[300px] flex items-center justify-center bg-muted/20 rounded-md">
-                    <LineChart className="h-8 w-8 text-muted-foreground" />
-                    <span className="ml-2 text-sm text-muted-foreground">Revenue chart would render here</span>
-                  </div>
+                  <RevenueChart 
+                    data={revenueData} 
+                    isLoading={isLoadingRevenue}
+                    error={revenueError}
+                  />
                   <div className="mt-4 flex items-center justify-between text-sm">
                     <div className="flex items-center">
                       <div className="mr-2 h-3 w-3 rounded-full bg-blue-500" />
@@ -176,14 +243,20 @@ export default function AnalyticsDashboard() {
                   <CardDescription>Revenue by marketing channel</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center space-y-4">
-                  <div className="h-[180px] w-[180px] flex items-center justify-center bg-muted/20 rounded-full">
-                    <PieChart className="h-8 w-8 text-muted-foreground" />
-                  </div>
+                  <ChannelDistributionChart 
+                    data={distributionData} 
+                    isLoading={isLoadingDistribution}
+                    error={distributionError}
+                  />
                   <div className="w-full space-y-3">
-                    <ChannelItem name="Campaigns" value="42%" color="bg-blue-500" />
-                    <ChannelItem name="Flows" value="35%" color="bg-violet-500" />
-                    <ChannelItem name="Forms" value="15%" color="bg-amber-500" />
-                    <ChannelItem name="Other" value="8%" color="bg-emerald-500" />
+                    {distributionData?.map((channel: ChannelDataPoint) => (
+                      <ChannelItem 
+                        key={channel.name}
+                        name={channel.name} 
+                        value={`${channel.value}%`} 
+                        color={`bg-${channel.color}-500`}
+                      />
+                    ))}
                   </div>
                 </CardContent>
               </Card>
@@ -197,7 +270,13 @@ export default function AnalyticsDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {segments.map((segment) => (
+                    {isLoadingSegments ? (
+                      <div className="animate-pulse space-y-4">
+                        {[1, 2, 3, 4].map((i) => (
+                          <div key={i} className="h-16 bg-muted rounded-md" />
+                        ))}
+                      </div>
+                    ) : topSegments?.map((segment: TopSegmentData) => (
                       <div key={segment.id} className="space-y-1">
                         <div className="flex items-center justify-between text-sm">
                           <div className="font-medium">{segment.name}</div>
@@ -221,7 +300,13 @@ export default function AnalyticsDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {flows.map((flow) => (
+                    {isLoadingFlows ? (
+                      <div className="animate-pulse space-y-4">
+                        {[1, 2, 3, 4].map((i) => (
+                          <div key={i} className="h-16 bg-muted rounded-md" />
+                        ))}
+                      </div>
+                    ) : topFlows?.map((flow: TopFlowData) => (
                       <div key={flow.id} className="flex items-center justify-between">
                         <div className="space-y-1">
                           <div className="font-medium">{flow.name}</div>
@@ -247,7 +332,13 @@ export default function AnalyticsDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {forms.map((form) => (
+                    {isLoadingForms ? (
+                      <div className="animate-pulse space-y-4">
+                        {[1, 2, 3, 4].map((i) => (
+                          <div key={i} className="h-16 bg-muted rounded-md" />
+                        ))}
+                      </div>
+                    ) : topForms?.map((form: TopFormData) => (
                       <div key={form.id} className="flex items-center justify-between">
                         <div className="space-y-1">
                           <div className="font-medium">{form.name}</div>
@@ -285,7 +376,13 @@ export default function AnalyticsDashboard() {
                     <div className="text-right">Revenue</div>
                   </div>
                   <div className="divide-y">
-                    {campaigns.map((campaign) => (
+                    {isLoadingCampaigns ? (
+                      <div className="animate-pulse space-y-4">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <div key={i} className="h-16 bg-muted rounded-md" />
+                        ))}
+                      </div>
+                    ) : campaignsData?.map((campaign: Campaign) => (
                       <div key={campaign.id} className="grid grid-cols-7 gap-4 p-4 items-center">
                         <div className="col-span-2 font-medium">{campaign.name}</div>
                         <div className="text-right">{campaign.sent.toLocaleString()}</div>
@@ -318,7 +415,13 @@ export default function AnalyticsDashboard() {
                     <div className="text-right">Revenue</div>
                   </div>
                   <div className="divide-y">
-                    {flowsDetailed.map((flow) => (
+                    {isLoadingFlowsData ? (
+                      <div className="animate-pulse space-y-4">
+                        {[1, 2, 3, 4, 5, 6].map((i) => (
+                          <div key={i} className="h-16 bg-muted rounded-md" />
+                        ))}
+                      </div>
+                    ) : flowsData?.map((flow: Flow) => (
                       <div key={flow.id} className="grid grid-cols-7 gap-4 p-4 items-center">
                         <div className="col-span-2 font-medium">{flow.name}</div>
                         <div className="text-right">{flow.recipients.toLocaleString()}</div>
@@ -350,7 +453,13 @@ export default function AnalyticsDashboard() {
                     <div className="text-right">Conversions</div>
                   </div>
                   <div className="divide-y">
-                    {formsDetailed.map((form) => (
+                    {isLoadingFormsData ? (
+                      <div className="animate-pulse space-y-4">
+                        {[1, 2, 3, 4, 5, 6].map((i) => (
+                          <div key={i} className="h-16 bg-muted rounded-md" />
+                        ))}
+                      </div>
+                    ) : formsData?.map((form: Form) => (
                       <div key={form.id} className="grid grid-cols-6 gap-4 p-4 items-center">
                         <div className="col-span-2 font-medium">{form.name}</div>
                         <div className="text-right">{form.views.toLocaleString()}</div>
@@ -370,7 +479,7 @@ export default function AnalyticsDashboard() {
   )
 }
 
-function MetricCard({ title, value, change, trend, icon, description, color }) {
+function MetricCard({ title, value, change, trend, icon, description, color }: MetricCardProps) {
   const colorMap = {
     blue: "bg-blue-50 text-blue-600 border-blue-100",
     indigo: "bg-indigo-50 text-indigo-600 border-indigo-100",
@@ -407,7 +516,7 @@ function MetricCard({ title, value, change, trend, icon, description, color }) {
   )
 }
 
-function ChannelItem({ name, value, color }) {
+function ChannelItem({ name, value, color }: ChannelItemProps) {
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2">
@@ -419,129 +528,8 @@ function ChannelItem({ name, value, color }) {
   )
 }
 
-function getBadgeVariant(rate) {
-  if (rate >= 30) return "success"
+function getBadgeVariant(rate: number): "default" | "secondary" | "outline" {
+  if (rate >= 30) return "outline"
   if (rate >= 20) return "default"
   return "secondary"
 }
-
-// Sample data
-const campaigns = [
-  {
-    id: 1,
-    name: "Summer Sale Announcement",
-    sent: 24850,
-    openRate: 42.8,
-    clickRate: 18.5,
-    conversionRate: 8.2,
-    revenue: 12580,
-  },
-  {
-    id: 2,
-    name: "New Product Launch",
-    sent: 18650,
-    openRate: 38.5,
-    clickRate: 15.2,
-    conversionRate: 6.8,
-    revenue: 9840,
-  },
-  {
-    id: 3,
-    name: "Customer Feedback Survey",
-    sent: 15420,
-    openRate: 31.2,
-    clickRate: 12.8,
-    conversionRate: 4.5,
-    revenue: 3250,
-  },
-  { id: 4, name: "Weekly Newsletter", sent: 28750, openRate: 24.7, clickRate: 9.3, conversionRate: 3.2, revenue: 4680 },
-  {
-    id: 5,
-    name: "Exclusive Member Discount",
-    sent: 12580,
-    openRate: 35.9,
-    clickRate: 16.4,
-    conversionRate: 7.5,
-    revenue: 8450,
-  },
-]
-
-const segments = [
-  { id: 1, name: "VIP Customers", conversionRate: 42, count: 5842, revenue: 28450 },
-  { id: 2, name: "Recent Purchasers", conversionRate: 35, count: 12480, revenue: 42680 },
-  { id: 3, name: "Cart Abandoners", conversionRate: 28, count: 8640, revenue: 15280 },
-  { id: 4, name: "Email Engaged", conversionRate: 22, count: 18540, revenue: 24850 },
-]
-
-const flows = [
-  { id: 1, name: "Welcome Series", recipients: 8450, conversionRate: 32 },
-  { id: 2, name: "Abandoned Cart", recipients: 6280, conversionRate: 28 },
-  { id: 3, name: "Post-Purchase", recipients: 12480, conversionRate: 24 },
-  { id: 4, name: "Win-Back", recipients: 5840, conversionRate: 18 },
-]
-
-const flowsDetailed = [
-  {
-    id: 1,
-    name: "Welcome Series",
-    recipients: 8450,
-    openRate: 68.5,
-    clickRate: 42.8,
-    conversionRate: 32,
-    revenue: 24850,
-  },
-  {
-    id: 2,
-    name: "Abandoned Cart",
-    recipients: 6280,
-    openRate: 58.2,
-    clickRate: 38.5,
-    conversionRate: 28,
-    revenue: 18650,
-  },
-  {
-    id: 3,
-    name: "Post-Purchase",
-    recipients: 12480,
-    openRate: 52.4,
-    clickRate: 32.6,
-    conversionRate: 24,
-    revenue: 15420,
-  },
-  { id: 4, name: "Win-Back", recipients: 5840, openRate: 42.8, clickRate: 28.4, conversionRate: 18, revenue: 9840 },
-  {
-    id: 5,
-    name: "Browse Abandonment",
-    recipients: 4280,
-    openRate: 38.5,
-    clickRate: 24.2,
-    conversionRate: 15,
-    revenue: 6580,
-  },
-  {
-    id: 6,
-    name: "Re-Engagement",
-    recipients: 7850,
-    openRate: 32.6,
-    clickRate: 18.4,
-    conversionRate: 12,
-    revenue: 4250,
-  },
-]
-
-const forms = [
-  { id: 1, name: "Newsletter Signup", views: 12480, submissionRate: 38 },
-  { id: 2, name: "Exit Intent Popup", views: 28450, submissionRate: 24 },
-  { id: 3, name: "Product Registration", views: 8640, submissionRate: 42 },
-  { id: 4, name: "Contact Form", views: 5840, submissionRate: 32 },
-]
-
-const formsDetailed = [
-  { id: 1, name: "Newsletter Signup", views: 12480, submissions: 4742, submissionRate: 38, conversions: 1850 },
-  { id: 2, name: "Exit Intent Popup", views: 28450, submissions: 6828, submissionRate: 24, conversions: 2450 },
-  { id: 3, name: "Product Registration", views: 8640, submissions: 3628, submissionRate: 42, conversions: 1580 },
-  { id: 4, name: "Contact Form", views: 5840, submissions: 1868, submissionRate: 32, conversions: 845 },
-  { id: 5, name: "Discount Popup", views: 18650, submissions: 5595, submissionRate: 30, conversions: 2240 },
-  { id: 6, name: "Feedback Survey", views: 7850, submissions: 1962, submissionRate: 25, conversions: 580 },
-]
-

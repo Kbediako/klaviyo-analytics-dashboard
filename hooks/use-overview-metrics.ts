@@ -1,4 +1,4 @@
-import { getOverviewMetrics, OverviewMetrics } from '../lib/api-client';
+import { getOverviewMetrics, OverviewMetrics, DateRangeParam } from '../lib/api-client';
 import { useApiQuery } from './use-api-query';
 import { useDateRange } from './use-date-range';
 
@@ -8,13 +8,13 @@ import { useDateRange } from './use-date-range';
  * @param enabled Whether to enable the query
  * @returns Overview metrics query result
  */
-export function useOverviewMetrics(enabled: boolean = true) {
+export function useOverviewMetrics(params: DateRangeParam = {}) {
   const { dateRangeParam } = useDateRange();
   
   return useApiQuery<OverviewMetrics>(
-    () => getOverviewMetrics({ dateRange: dateRangeParam }),
+    () => getOverviewMetrics({ dateRange: params.dateRange || dateRangeParam }),
     {
-      enabled,
+      enabled: true,
       // Refetch every 5 minutes
       refetchInterval: 5 * 60 * 1000,
     }

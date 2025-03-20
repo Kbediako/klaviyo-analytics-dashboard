@@ -12,6 +12,7 @@ import {
 import { useChannelDistributionData } from '../hooks/use-chart-data';
 import { useDateRange } from '../hooks';
 import { Skeleton } from './ui/skeleton';
+import { ChannelDataPoint } from '../lib/api-client';
 
 // Colors for the pie chart segments
 const COLORS = ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981'];
@@ -21,12 +22,13 @@ const COLORS = ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981'];
  * 
  * Displays revenue distribution by marketing channel
  */
-export function ChannelDistributionChart() {
-  // Get the current date range parameter
-  const { dateRangeParam } = useDateRange();
-  
-  // Pass the date range parameter to the hook
-  const { data, isLoading, error } = useChannelDistributionData({ dateRange: dateRangeParam });
+interface ChannelDistributionChartProps {
+  data?: ChannelDataPoint[];
+  isLoading?: boolean;
+  error?: Error | null;
+}
+
+export function ChannelDistributionChart({ data = [], isLoading = false, error = null }: ChannelDistributionChartProps) {
   
   // Container with fixed height to prevent layout shifts
   return (

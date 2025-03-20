@@ -16,13 +16,7 @@ import { useRevenueChartData } from '../hooks/use-chart-data';
 import { useDateRange } from '../hooks';
 import { Skeleton } from './ui/skeleton';
 
-type RevenueDataPoint = {
-  date: string;
-  campaigns: number;
-  flows: number;
-  forms: number;
-  other: number;
-};
+import { RevenueDataPoint } from '../lib/api-client';
 
 const CustomTooltip = ({
   active,
@@ -69,12 +63,13 @@ const CustomTooltip = ({
  * 
  * Displays revenue over time by channel
  */
-export function RevenueChart() {
-  // Get the current date range parameter
-  const { dateRangeParam } = useDateRange();
-  
-  // Pass the date range parameter to the hook
-  const { data, isLoading, error } = useRevenueChartData({ dateRange: dateRangeParam });
+interface RevenueChartProps {
+  data?: RevenueDataPoint[];
+  isLoading?: boolean;
+  error?: Error | null;
+}
+
+export function RevenueChart({ data = [], isLoading = false, error = null }: RevenueChartProps) {
   
   // Container with fixed height to prevent layout shifts
   return (

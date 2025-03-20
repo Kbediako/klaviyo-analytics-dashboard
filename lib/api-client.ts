@@ -139,6 +139,42 @@ export function clearCache(endpoint?: string): void {
 /**
  * Interface for date range parameter
  */
+export interface RevenueDataPoint {
+  date: string;
+  campaigns: number;
+  flows: number;
+  forms: number;
+  other: number;
+}
+
+export interface ChannelDataPoint {
+  name: string;
+  value: number;
+  color: string;
+}
+
+export interface TopSegmentData {
+  id: number;
+  name: string;
+  conversionRate: number;
+  count: number;
+  revenue: number;
+}
+
+export interface TopFlowData {
+  id: number;
+  name: string;
+  recipients: number;
+  conversionRate: number;
+}
+
+export interface TopFormData {
+  id: number;
+  name: string;
+  views: number;
+  submissionRate: number;
+}
+
 export interface DateRangeParam {
   dateRange?: string;
 }
@@ -168,6 +204,11 @@ export interface OverviewMetrics {
     change: number;
   };
   conversionRate: {
+    current: number;
+    previous: number;
+    change: number;
+  };
+  formSubmissions: {
     current: number;
     previous: number;
     change: number;

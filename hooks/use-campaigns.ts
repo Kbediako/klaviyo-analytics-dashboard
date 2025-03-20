@@ -1,4 +1,4 @@
-import { getCampaigns, Campaign } from '../lib/api-client';
+import { getCampaigns, Campaign, DateRangeParam } from '../lib/api-client';
 import { useApiQuery } from './use-api-query';
 import { useDateRange } from './use-date-range';
 
@@ -8,13 +8,13 @@ import { useDateRange } from './use-date-range';
  * @param enabled Whether to enable the query
  * @returns Campaigns query result
  */
-export function useCampaigns(enabled: boolean = true) {
+export function useCampaigns(params: DateRangeParam = {}) {
   const { dateRangeParam } = useDateRange();
   
   return useApiQuery<Campaign[]>(
-    () => getCampaigns({ dateRange: dateRangeParam }),
+    () => getCampaigns({ dateRange: params.dateRange || dateRangeParam }),
     {
-      enabled,
+      enabled: true,
       // Refetch every 5 minutes
       refetchInterval: 5 * 60 * 1000,
     }
