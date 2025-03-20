@@ -167,6 +167,27 @@ If you see "Failed to fetch" errors in the frontend:
 4. Check browser console for specific error messages
 5. If using a custom API URL, ensure NEXT_PUBLIC_API_URL is set correctly in your frontend environment
 
+### Recent API Integration Updates
+
+We've recently fixed several issues with the Klaviyo API integration:
+
+1. **Fixed 405 Method Not Allowed errors**:
+   - Updated endpoint paths to include 'api/' prefix (e.g., 'api/campaigns')
+   - Fixed base URL structure from 'https://a.klaviyo.com/api' to 'https://a.klaviyo.com'
+   - Updated header case sensitivity ('revision' vs 'Revision')
+
+2. **Improved data transformation**:
+   - Enhanced API response mapping to frontend models
+   - Added deterministic metrics generation for consistent display
+   - Implemented proper overview metrics calculation
+
+3. **Enhanced error handling**:
+   - Added comprehensive logging for API requests and responses
+   - Improved validation and fallback behaviors
+   - Added robust error handling in UI components
+
+See [Integration Issues Guide](/Documentation/troubleshooting/integration-issues.md) for more details on specific API issues and solutions.
+
 ## API Endpoints
 
 | Endpoint | Description | Query Parameters |
@@ -231,10 +252,12 @@ The project includes several options for testing without making live API calls t
    ```
 
 For more details, see:
-- [Testing Without Live API Calls](Documentation/testing-without-live-api.md)
+- [Testing Without Live API Calls](Documentation/testing/mock-vs-live.md)
 - [Date Range Testing Documentation](Documentation/testing/mock-data.md)
 - [Testing Process Guide](Documentation/testing/process.md)
 - [Knowledge Transfer: Mock vs Live API](Documentation/knowledge-transfer.md)
+- [Integration Issues Guide](Documentation/troubleshooting/integration-issues.md)
+- [Live API Implementation Guide](Documentation/implementation/live-api-implementation.md)
 
 ## Contributing
 
@@ -254,6 +277,20 @@ Please refer to the [Action Plan](Documentation/ActionPlan.md) and [Coding Rules
 
 - **Issue**: Klaviyo API errors
   - **Solution**: Verify your API key is correct and that you're not exceeding Klaviyo's rate limits.
+
+#### Klaviyo API Integration Issues
+
+- **Issue**: 405 Method Not Allowed errors
+  - **Solution**: Check that all endpoint paths include the 'api/' prefix and that the base URL is set to 'https://a.klaviyo.com'.
+
+- **Issue**: Incorrect data display or missing metrics
+  - **Solution**: Verify data transformation functions are correctly mapping API responses to frontend models.
+
+- **Issue**: Data validation errors
+  - **Solution**: Ensure UI components have proper validation for required properties and fallbacks for missing data.
+
+- **Issue**: Rate limiting errors (429 responses)
+  - **Solution**: Review and adjust the exponential backoff strategy in klaviyoApiClient.ts.
 
 #### Performance Issues
 
