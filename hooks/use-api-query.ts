@@ -127,7 +127,7 @@ export function useApiQuery<T>(
     }
   }, [onSuccess, onError]);
 
-  // Initial fetch
+  // Initial fetch and refetch when queryFn changes
   useEffect(() => {
     if (!enabled) {
       setIsLoading(false);
@@ -135,10 +135,11 @@ export function useApiQuery<T>(
       return;
     }
 
+    // Force a refetch by calling fetchData
     fetchData().catch(() => {
       // Error is already handled in fetchData
     });
-  }, [enabled, fetchData]);
+  }, [enabled, fetchData, queryFn]); // Add queryFn to dependencies to refetch when it changes
 
   // Set up refetch interval
   useEffect(() => {

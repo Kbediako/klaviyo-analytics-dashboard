@@ -1,10 +1,10 @@
-import { setupWorker } from 'msw';
+import { setupWorker, type SetupWorker } from 'msw/browser';
 import { handlers } from './handlers';
 
 /**
  * This configures a Service Worker with the given request handlers for browser environments
  */
-export const worker = setupWorker(...handlers);
+export const worker: SetupWorker = setupWorker(...handlers);
 
 /**
  * Initialize MSW in the browser
@@ -17,6 +17,8 @@ export function initMswBrowser() {
     console.log('🔶 Mock Service Worker enabled in browser');
     worker.start({
       onUnhandledRequest: 'bypass', // Don't warn about unhandled requests
+    }).catch(error => {
+      console.error('MSW worker start failed:', error);
     });
   }
 }

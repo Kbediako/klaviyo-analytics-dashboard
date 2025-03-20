@@ -27,13 +27,45 @@ describe('Mock Server Example Tests', () => {
       expect(response.body).toHaveProperty('formSubmissions.change');
     });
 
-    it('should return the same data as defined in mockData', async () => {
-      const response = await request(app)
-        .get('/api/overview')
-        .expect(200);
+    it('should handle date range filtering correctly', async () => {
+      const dateRanges = ['last-7-days', 'last-30-days', 'last-90-days'];
       
-      // Verify the response matches the mock data
-      expect(response.body).toEqual(mockData.overview);
+      for (const range of dateRanges) {
+        const response = await request(app)
+          .get(`/api/overview?dateRange=${range}`)
+          .expect(200);
+        
+        // Verify the response has the correct structure
+        expect(response.body).toHaveProperty('revenue.current');
+        expect(response.body).toHaveProperty('revenue.change');
+        
+        // Verify the revenue is calculated correctly based on the date range
+        const revenueData = mockData.charts.revenueOverTime;
+        const today = new Date('2025-03-19');
+        const startDate = new Date(today);
+        
+        switch (range) {
+          case 'last-7-days':
+            startDate.setDate(today.getDate() - 7);
+            break;
+          case 'last-30-days':
+            startDate.setDate(today.getDate() - 30);
+            break;
+          case 'last-90-days':
+            startDate.setDate(today.getDate() - 90);
+            break;
+        }
+        
+        const filteredData = revenueData.filter(item => {
+          const itemDate = new Date(item.date);
+          return itemDate >= startDate && itemDate <= today;
+        });
+        
+        const expectedRevenue = Math.round(filteredData.reduce((sum, item) => 
+          sum + item.campaigns + item.flows + item.forms + item.other, 0));
+        
+        expect(response.body.revenue.current).toBe(expectedRevenue);
+      }
     });
   });
 
@@ -50,9 +82,59 @@ describe('Mock Server Example Tests', () => {
       response.body.forEach((campaign: any) => {
         expect(campaign).toHaveProperty('id');
         expect(campaign).toHaveProperty('name');
-        expect(campaign).toHaveProperty('status');
-        expect(campaign).toHaveProperty('metrics');
+        expect(campaign).toHaveProperty('revenue');
       });
+    });
+
+    it('should adjust campaign revenue based on date range', async () => {
+      const response = await request(app)
+        .get('/api/campaigns?dateRange=last-7-days')
+        .expect(200);
+      
+      // Verify revenue is calculated from the last 7 days of data
+      const revenueData = mockData.charts.revenueOverTime.slice(-7);
+      const expectedRevenue = Math.round(revenueData.reduce((sum, item) => 
+        sum + item.campaigns / mockData.campaigns.length, 0));
+      
+      response.body.forEach((campaign: any) => {
+        expect(campaign.revenue).toBe(expectedRevenue);
+      });
+    });
+  });
+
+  describe('GET /api/charts/revenue', () => {
+    it('should filter revenue data by date range', async () => {
+      const response = await request(app)
+        .get('/api/charts/revenue?dateRange=last-7-days')
+        .expect(200);
+      
+      // Verify we get exactly 7 days of data
+      expect(response.body.length).toBe(7);
+      
+      // Verify the dates are within the last 7 days
+      const today = new Date('2025-03-19');
+      const sevenDaysAgo = new Date(today);
+      sevenDaysAgo.setDate(today.getDate() - 7);
+      
+      response.body.forEach((item: any) => {
+        const itemDate = new Date(item.date);
+        expect(itemDate >= sevenDaysAgo && itemDate <= today).toBe(true);
+      });
+    });
+  });
+
+  describe('GET /api/charts/distribution', () => {
+    it('should return correct distribution data for different date ranges', async () => {
+      const dateRanges = ['last-7-days', 'last-30-days', 'last-90-days'] as const;
+      
+      for (const range of dateRanges) {
+        const response = await request(app)
+          .get(`/api/charts/distribution?dateRange=${range}`)
+          .expect(200);
+        
+        // Verify the response matches the mock data for the given range
+        expect(response.body).toEqual(mockData.charts.channelDistribution[range as keyof typeof mockData.charts.channelDistribution]);
+      }
     });
   });
 

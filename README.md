@@ -100,20 +100,41 @@ The frontend is already set up with Next.js and all necessary UI components. To 
 
 The frontend will be available at http://localhost:3000.
 
-### Running the Full Application
+### Running the Application
 
-To run the complete application, you need to start both the backend and frontend servers:
+You can run the application in two modes: with the mock API server or with the live Klaviyo API.
 
-#### Option 1: Start both servers with a single command
+#### Option 1: Run with Mock API Server
+
+Use this option for development and testing without making real API calls to Klaviyo.
 
 ```bash
 # From the project root
-npm run dev:all
+./run-with-mock-server.sh
 ```
 
-This will start both the backend server on port 3001 and the frontend server on port 3000 concurrently.
+This script will:
+1. Start the mock API server on port 3002
+2. Start the frontend with the mock API URL
+3. Both servers can be stopped with Ctrl+C
 
-#### Option 2: Start servers separately
+#### Option 2: Run with Live Klaviyo API
+
+Use this option when you want to test with real data from your Klaviyo account.
+
+```bash
+# From the project root
+./run-with-live-api.sh
+```
+
+This script will:
+1. Start the backend server with your Klaviyo API key
+2. Start the frontend connected to the backend
+3. Both servers can be stopped with Ctrl+C
+
+#### Option 3: Start Servers Manually
+
+If you prefer to start the servers manually:
 
 1. **Start the backend server first**:
    ```bash
@@ -150,6 +171,11 @@ If you see "Failed to fetch" errors in the frontend:
 | `GET /api/flows` | Flow performance metrics | `dateRange` |
 | `GET /api/forms` | Form submission and conversion data | `dateRange` |
 | `GET /api/segments` | Segment membership and performance | `dateRange` |
+| `GET /api/charts/revenue` | Revenue data for charts | `dateRange` |
+| `GET /api/charts/distribution` | Channel distribution data | `dateRange` |
+| `GET /api/charts/top-segments` | Top segments data | `dateRange` |
+| `GET /api/charts/top-flows` | Top flows data | `dateRange` |
+| `GET /api/charts/top-forms` | Top forms data | `dateRange` |
 
 ## Development Workflow
 
@@ -175,6 +201,21 @@ npm test
 ```bash
 npm test
 ```
+
+### Testing Without Live API Calls
+
+The project includes several options for testing without making live API calls to Klaviyo:
+
+1. **Mock API Server**: Use the `run-with-mock-server.sh` script to run the application with a mock API server.
+
+2. **MSW (Mock Service Worker)**: The frontend includes MSW for intercepting and mocking API requests during development.
+   ```bash
+   NEXT_PUBLIC_API_MOCKING=enabled npm run dev
+   ```
+
+3. **Unit Tests with Mocks**: All unit tests use mocks to avoid making real API calls.
+
+For more details, see the [Testing Without Live API Calls](Documentation/testing-without-live-api.md) documentation.
 
 ## Contributing
 

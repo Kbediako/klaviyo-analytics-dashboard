@@ -108,7 +108,7 @@ export function Dashboard() {
             <TabsTrigger value="segments">Segments</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="overview" className="space-y-6">
+          <TabsContent value="overview" className="space-y-6" forceMount>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               <Card className="lg:col-span-2">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">

@@ -9,19 +9,22 @@ import { Skeleton } from './ui/skeleton';
  */
 export function MetricCardSkeleton() {
   return (
-    <Card>
+    <Card className="min-h-[144px]">
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
-          <Skeleton className="h-4 w-[100px]" />
-          <Skeleton className="h-8 w-8 rounded-full" />
+          <Skeleton className="h-[14px] w-[100px]" /> {/* Match text-sm */}
+          <Skeleton className="h-6 w-6 rounded-full" /> {/* Match icon size */}
         </div>
         
         <div className="mt-2">
-          <Skeleton className="h-10 w-[120px] mt-2" />
+          <Skeleton className="h-[36px] w-[120px]" /> {/* Match text-3xl */}
           
           <div className="mt-2 flex items-center">
-            <Skeleton className="h-4 w-[80px]" />
-            <Skeleton className="h-3 w-[100px] ml-2" />
+            <div className="flex items-center">
+              <Skeleton className="h-4 w-4 mr-1" /> {/* Match arrow icon */}
+              <Skeleton className="h-[16px] w-[60px]" /> {/* Match font-medium text */}
+            </div>
+            <Skeleton className="h-[12px] w-[100px] ml-2" /> {/* Match text-xs */}
           </div>
         </div>
       </CardContent>

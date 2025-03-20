@@ -52,16 +52,31 @@ const CACHE_TTL = 5 * 60 * 1000;
  * @param skipCache Whether to skip the cache and force a fresh request
  * @returns Promise with the response data
  */
-async function fetchFromAPI<T>(
+interface FetchOptions extends RequestInit {
+  params?: DateRangeParam | Record<string, string | undefined>;
+}
+
+export async function fetchFromAPI<T>(
   endpoint: string, 
-  options: RequestInit = {}, 
+  options: FetchOptions = {}, 
   skipCache: boolean = false
 ): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
-  const cacheKey = `${url}:${JSON.stringify(options)}`;
+  const queryParams = new URLSearchParams();
+  if (options.params) {
+    Object.entries(options.params).forEach(([key, value]) => {
+      if (value !== undefined) {
+        queryParams.append(key, value);
+      }
+    });
+  }
+  const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+  const url = `${API_BASE_URL}${endpoint}${queryString}`;
+  const { params, ...fetchOptions } = options;
+  const cacheKey = `${url}:${JSON.stringify(fetchOptions)}`;
   
-  // Check cache first if not skipping cache
-  if (!skipCache) {
+  // Skip cache for date range-dependent requests
+  const hasDateRange = options.params && 'dateRange' in options.params;
+  if (!skipCache && !hasDateRange) {
     const cachedEntry = cache.get(cacheKey);
     if (cachedEntry && (Date.now() - cachedEntry.timestamp) < CACHE_TTL) {
       console.log(`Using cached data for ${endpoint}`);
@@ -72,7 +87,7 @@ async function fetchFromAPI<T>(
   try {
     const response = await fetch(url, {
       ...defaultOptions,
-      ...options,
+      ...fetchOptions,
     });
 
     if (!response.ok) {
@@ -220,13 +235,7 @@ export interface Segment {
  * @returns Overview metrics data
  */
 export async function getOverviewMetrics(params: DateRangeParam = {}): Promise<OverviewMetrics> {
-  const queryParams = new URLSearchParams();
-  if (params.dateRange) {
-    queryParams.append('dateRange', params.dateRange);
-  }
-
-  const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
-  return fetchFromAPI(`/overview${queryString}`);
+  return fetchFromAPI<OverviewMetrics>('/overview', { params });
 }
 
 /**
@@ -236,13 +245,7 @@ export async function getOverviewMetrics(params: DateRangeParam = {}): Promise<O
  * @returns Campaigns data
  */
 export async function getCampaigns(params: DateRangeParam = {}): Promise<Campaign[]> {
-  const queryParams = new URLSearchParams();
-  if (params.dateRange) {
-    queryParams.append('dateRange', params.dateRange);
-  }
-
-  const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
-  return fetchFromAPI(`/campaigns${queryString}`);
+  return fetchFromAPI<Campaign[]>('/campaigns', { params });
 }
 
 /**
@@ -252,13 +255,7 @@ export async function getCampaigns(params: DateRangeParam = {}): Promise<Campaig
  * @returns Flows data
  */
 export async function getFlows(params: DateRangeParam = {}): Promise<Flow[]> {
-  const queryParams = new URLSearchParams();
-  if (params.dateRange) {
-    queryParams.append('dateRange', params.dateRange);
-  }
-
-  const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
-  return fetchFromAPI(`/flows${queryString}`);
+  return fetchFromAPI<Flow[]>('/flows', { params });
 }
 
 /**
@@ -268,13 +265,7 @@ export async function getFlows(params: DateRangeParam = {}): Promise<Flow[]> {
  * @returns Forms data
  */
 export async function getForms(params: DateRangeParam = {}): Promise<Form[]> {
-  const queryParams = new URLSearchParams();
-  if (params.dateRange) {
-    queryParams.append('dateRange', params.dateRange);
-  }
-
-  const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
-  return fetchFromAPI(`/forms${queryString}`);
+  return fetchFromAPI<Form[]>('/forms', { params });
 }
 
 /**
@@ -284,13 +275,7 @@ export async function getForms(params: DateRangeParam = {}): Promise<Form[]> {
  * @returns Segments data
  */
 export async function getSegments(params: DateRangeParam = {}): Promise<Segment[]> {
-  const queryParams = new URLSearchParams();
-  if (params.dateRange) {
-    queryParams.append('dateRange', params.dateRange);
-  }
-
-  const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
-  return fetchFromAPI(`/segments${queryString}`);
+  return fetchFromAPI<Segment[]>('/segments', { params });
 }
 
 /**
