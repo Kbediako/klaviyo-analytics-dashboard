@@ -287,6 +287,8 @@ This warning indicates that some asynchronous operations (like timers, network r
 - **"Missing required environment variable"**: Check your `.env` file
 - **Klaviyo API errors**: Verify API key and check rate limits
 - **Slow responses**: Check cache configuration and Klaviyo API status
+- **429 Rate Limit Errors**: The backend implements rate limiting to avoid overloading the Klaviyo API. If you're seeing 429 errors, check the rate limiting configuration in `backend/src/middleware/rateLimitMiddleware.ts`. You may need to adjust the limits based on your usage patterns.
+- **Syntax Errors in API Code**: If you encounter unexpected syntax errors in the API code, check for missing commas in function parameters and object definitions, especially in the rate limiting middleware and API query hooks.
 
 ### Debugging
 
