@@ -389,3 +389,34 @@ To properly run the full application:
 - Add export functionality for reports
 - Add fallback UI state with sample data when backend is unavailable
 - Improve error handling in the frontend for API connection failures
+
+## Common Issues and Solutions
+
+### React Hydration Errors
+
+When working with Next.js applications that use server-side rendering (SSR), you may encounter hydration errors. These occur when the HTML rendered on the server doesn't match what the client expects to render. Common causes include:
+
+1. **Theme Provider Issues**: 
+   - **Problem**: Using theme providers (like next-themes) incorrectly can cause hydration errors, especially when the provider is placed in individual pages instead of the root layout.
+   - **Solution**: For simpler applications, consider using static theme classes directly in the layout.tsx file instead of using a dynamic theme provider. For example:
+     ```tsx
+     <html lang="en" className="dark" style={{ colorScheme: 'dark' }}>
+     ```
+
+2. **Date/Time Formatting**: 
+   - **Problem**: Using `Date.now()` or locale-specific date formatting can cause hydration errors because the server and client may render different values.
+   - **Solution**: Use stable date values or ensure date formatting is consistent between server and client.
+
+3. **Random Values**: 
+   - **Problem**: Using `Math.random()` or other non-deterministic functions can cause hydration errors.
+   - **Solution**: Avoid using random values in components that are server-rendered, or use a stable seed.
+
+4. **Browser-Specific Code**: 
+   - **Problem**: Using `typeof window !== 'undefined'` checks can lead to different rendering between server and client.
+   - **Solution**: Use the `'use client'` directive for components that need browser-specific functionality, or use dynamic imports with Next.js's `dynamic` function.
+
+5. **Third-Party Libraries and Extensions**:
+   - **Problem**: Some third-party libraries or browser extensions may add attributes to elements (like `data-sharkid`) that cause hydration mismatches.
+   - **Solution**: If you see attributes like `data-sharkid` in hydration errors, check if you have any browser extensions that might be modifying the DOM. For libraries, consider using them only in client components or wrapping them with dynamic imports.
+
+When you encounter a hydration error, check the browser console for specific details about what's causing the mismatch. The error message often includes information about the specific elements that don't match.

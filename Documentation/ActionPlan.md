@@ -172,11 +172,13 @@ This action plan outlines the steps needed to implement the Klaviyo Analytics Da
   - [ ] Add fallback UI state with sample data when backend is unavailable
   - [x] Improve error handling in the frontend for API connection failures
   - [x] Add clear error messages for common connection issues
+  - [x] Fix React hydration errors by moving ThemeProvider to layout.tsx
 
 - [x] **Documentation Updates**
   - [x] Update knowledge transfer document with integration information
   - [x] Add "Running the Application" section to README.md
   - [x] Create troubleshooting guide for common integration issues
+  - [x] Document common React hydration errors and solutions
 
 - [ ] **Development Experience**
   - [x] Create a combined dev script to start both frontend and backend

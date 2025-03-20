@@ -15,16 +15,23 @@ klaviyo-analytics-dashboard/
 ├── public/             # Static assets
 ├── styles/             # Global styles
 ├── analytics-dashboard.tsx # Main dashboard component
+├── hooks/              # React hooks for data fetching
+├── lib/                # Utility functions and API client
 └── backend/            # Node.js/Express backend (API)
 ```
 
 ## Features
 
-- **Overview Dashboard**: Key metrics including revenue, subscribers, and conversion rates
+- **Persistent Metric Cards**: Key metrics remain visible across all dashboard tabs
+- **Overview Dashboard**: 
+  - High-level metrics including revenue, subscribers, conversion rates, and form submissions
+  - Data visualizations including revenue trends and channel distribution
+  - Top performing segments, flows, and forms
 - **Campaign Analytics**: Performance metrics for email campaigns
 - **Flow Insights**: Automated flow performance and optimization opportunities
 - **Form Analytics**: Form submission rates and conversion data
 - **Segment Analysis**: Customer segment performance and growth
+- **Client-Side Caching**: Improved performance with local caching of API responses
 
 ## Tech Stack
 
