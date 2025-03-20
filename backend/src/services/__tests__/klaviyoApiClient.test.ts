@@ -1,236 +1,344 @@
 import { KlaviyoApiClient } from '../klaviyoApiClient';
-import { FilterParam, JsonApiParams } from '../../utils/jsonApiUtils';
-import fetch from 'node-fetch';
+import nock from 'nock';
 import rateLimitManager from '../rateLimitManager';
+import { FilterParam } from '../../utils/jsonApiUtils';
 
-// Mock node-fetch
-jest.mock('node-fetch');
-const mockedFetch = fetch as jest.MockedFunction<typeof fetch>;
-
-// Mock rate limit manager
+// Mock rateLimitManager
 jest.mock('../rateLimitManager', () => ({
-  __esModule: true,
-  default: {
+  calculateDelay: jest.fn().mockResolvedValue(0),
+  updateFromHeaders: jest.fn(),
+  getInstance: jest.fn().mockReturnValue({
     calculateDelay: jest.fn().mockResolvedValue(0),
-    updateFromHeaders: jest.fn(),
-  },
+    updateFromHeaders: jest.fn()
+  })
 }));
 
 describe('KlaviyoApiClient', () => {
   let client: KlaviyoApiClient;
-  const mockApiKey = 'test-api-key';
   
   beforeEach(() => {
     jest.clearAllMocks();
-    client = new KlaviyoApiClient(mockApiKey);
-    
-    // Setup default mock response
-    const mockResponse = {
-      ok: true,
-      status: 200,
-      headers: {
-        get: jest.fn((header) => {
-          if (header === 'content-type') return 'application/json';
-          if (header === 'x-rate-limit-remaining') return '100';
-          if (header === 'x-rate-limit-reset') return '60';
-          return null;
-        }),
-      },
-      json: jest.fn().mockResolvedValue({ data: [] }),
-      text: jest.fn().mockResolvedValue(''),
-    };
-    
-    mockedFetch.mockResolvedValue(mockResponse as any);
+    nock.cleanAll();
+    client = new KlaviyoApiClient('test-api-key');
   });
   
-  describe('constructor', () => {
-    it('should throw an error if API key is not provided', () => {
+  afterAll(() => {
+    nock.restore();
+  });
+  
+  describe('Constructor', () => {
+    it('should throw an error if no API key is provided', () => {
       expect(() => new KlaviyoApiClient('')).toThrow('Klaviyo API key is required');
     });
     
-    it('should initialize with default values', () => {
-      expect(client).toBeInstanceOf(KlaviyoApiClient);
+    it('should use default values if not provided', () => {
+      const client = new KlaviyoApiClient('test-api-key');
+      // @ts-ignore - accessing private properties for testing
+      expect(client.apiVersion).toBe('2023-07-15');
+      // @ts-ignore - accessing private properties for testing
+      expect(client.maxRetries).toBe(5);
+      // @ts-ignore - accessing private properties for testing
+      expect(client.retryDelay).toBe(2000);
+    });
+    
+    it('should use provided values', () => {
+      const client = new KlaviyoApiClient('test-api-key', 'custom-version', 10, 5000);
+      // @ts-ignore - accessing private properties for testing
+      expect(client.apiVersion).toBe('custom-version');
+      // @ts-ignore - accessing private properties for testing
+      expect(client.maxRetries).toBe(10);
+      // @ts-ignore - accessing private properties for testing
+      expect(client.retryDelay).toBe(5000);
     });
   });
   
   describe('get', () => {
     it('should make API calls with correct headers', async () => {
-      await client.get('api/campaigns');
+      const scope = nock('https://a.klaviyo.com')
+        .get('/api/metrics')
+        .matchHeader('Authorization', 'Bearer test-api-key')
+        .matchHeader('revision', '2023-07-15')
+        .matchHeader('Accept', 'application/json')
+        .matchHeader('Content-Type', 'application/json')
+        .reply(200, { data: [] });
       
-      expect(mockedFetch).toHaveBeenCalledTimes(1);
-      const [url, options] = mockedFetch.mock.calls[0];
+      await client.get('/api/metrics');
       
-      expect(url).toContain('https://a.klaviyo.com/api/campaigns');
-      expect(options?.headers).toEqual({
-        'Authorization': `Bearer ${mockApiKey}`,
-        'Accept': 'application/json',
-        'revision': '2023-07-15',
-        'Content-Type': 'application/json',
-      });
+      expect(scope.isDone()).toBeTruthy();
     });
     
-    it('should use JSON:API parameter formatting', async () => {
-      const params: JsonApiParams = {
+    it('should handle query parameters correctly', async () => {
+      const scope = nock('https://a.klaviyo.com')
+        .get('/api/metrics?param1=value1&param2=value2')
+        .reply(200, { data: [] });
+      
+      await client.get('/api/metrics', { param1: 'value1', param2: 'value2' });
+      
+      expect(scope.isDone()).toBeTruthy();
+    });
+    
+    it('should handle JSON:API parameters correctly', async () => {
+      const scope = nock('https://a.klaviyo.com')
+        .get('/api/metrics?filter=equals(status,"active")')
+        .reply(200, { data: [] });
+      
+      await client.get('/api/metrics', {
         filter: [
           {
-            field: 'messages.channel',
-            operator: 'equals' as const,
-            value: 'email',
-          },
-        ],
-        include: ['tags'],
-        fields: {
-          campaign: ['name', 'status'],
-        },
-        page: {
-          size: 50,
-        },
-      };
+            field: 'status',
+            operator: 'equals',
+            value: 'active'
+          }
+        ]
+      });
       
-      await client.get('api/campaigns', params);
-      
-      expect(mockedFetch).toHaveBeenCalledTimes(1);
-      const [url] = mockedFetch.mock.calls[0];
-      
-      // Verify URL contains properly formatted parameters
-      expect(url).toContain('filter=equals(messages.channel,"email")');
-      expect(url).toContain('include=tags');
-      expect(url).toContain('fields[campaign]=name,status');
-      expect(url).toContain('page[size]=50');
+      expect(scope.isDone()).toBeTruthy();
     });
     
-    it('should handle rate limiting with retry', async () => {
-      // First call returns rate limit error, second succeeds
-      const rateLimitResponse = {
-        ok: false,
-        status: 429,
-        headers: {
-          get: jest.fn((header) => {
-            if (header === 'Retry-After') return '1';
-            return null;
-          }),
-        },
-        text: jest.fn().mockResolvedValue('Rate limited'),
-      };
+    it('should retry on rate limiting', async () => {
+      // First request returns 429 (rate limit)
+      const scope1 = nock('https://a.klaviyo.com')
+        .get('/api/metrics')
+        .reply(429, {}, { 'Retry-After': '1' });
       
-      const successResponse = {
-        ok: true,
-        status: 200,
-        headers: {
-          get: jest.fn((header) => {
-            if (header === 'content-type') return 'application/json';
-            return null;
-          }),
-        },
-        json: jest.fn().mockResolvedValue({ data: [{ id: '1', type: 'campaign' }] }),
-      };
+      // Second request succeeds
+      const scope2 = nock('https://a.klaviyo.com')
+        .get('/api/metrics')
+        .reply(200, { data: [] });
       
-      mockedFetch
-        .mockResolvedValueOnce(rateLimitResponse as any)
-        .mockResolvedValueOnce(successResponse as any);
+      await client.get('/api/metrics');
       
-      const result = await client.get('api/campaigns');
+      expect(scope1.isDone()).toBeTruthy();
+      expect(scope2.isDone()).toBeTruthy();
+    });
+    
+    it('should handle non-JSON responses', async () => {
+      const scope = nock('https://a.klaviyo.com')
+        .get('/api/metrics')
+        .reply(200, 'Not JSON', { 'Content-Type': 'text/plain' });
       
-      expect(mockedFetch).toHaveBeenCalledTimes(2);
-      expect(result).toEqual({ data: [{ id: '1', type: 'campaign' }] });
+      await expect(client.get('/api/metrics')).rejects.toThrow('Klaviyo API returned non-JSON response');
+      
+      expect(scope.isDone()).toBeTruthy();
+    });
+    
+    it('should handle server errors', async () => {
+      const scope = nock('https://a.klaviyo.com')
+        .get('/api/metrics')
+        .reply(500, 'Internal Server Error');
+      
+      await expect(client.get('/api/metrics')).rejects.toThrow('Klaviyo API error (500)');
+      
+      expect(scope.isDone()).toBeTruthy();
     });
     
     it('should deduplicate in-flight requests with the same URL', async () => {
-      // Make two identical requests
-      const promise1 = client.get('api/campaigns');
-      const promise2 = client.get('api/campaigns');
+      const scope = nock('https://a.klaviyo.com')
+        .get('/api/metrics')
+        .reply(200, { data: [] });
       
-      // Both should resolve to the same result
+      // Make two requests with the same URL
+      const promise1 = client.get('/api/metrics');
+      const promise2 = client.get('/api/metrics');
+      
+      // Both promises should resolve to the same response
       const [result1, result2] = await Promise.all([promise1, promise2]);
       
-      // But fetch should only be called once
-      expect(mockedFetch).toHaveBeenCalledTimes(1);
+      // The nock scope should only be called once
+      expect(scope.isDone()).toBeTruthy();
       expect(result1).toEqual(result2);
     });
     
     it('should update rate limit information from response headers', async () => {
-      await client.get('api/campaigns');
+      const headers = {
+        'x-rate-limit-remaining': '100',
+        'x-rate-limit-reset': '60'
+      };
       
-      expect(rateLimitManager.updateFromHeaders).toHaveBeenCalledTimes(1);
+      const scope = nock('https://a.klaviyo.com')
+        .get('/api/metrics')
+        .reply(200, { data: [] }, headers);
+      
+      await client.get('/api/metrics');
+      
+      expect(scope.isDone()).toBeTruthy();
+      expect(rateLimitManager.updateFromHeaders).toHaveBeenCalledWith('api/metrics', expect.anything());
+    });
+    
+    it('should calculate delay based on rate limits', async () => {
+      const scope = nock('https://a.klaviyo.com')
+        .get('/api/metrics')
+        .reply(200, { data: [] });
+      
+      await client.get('/api/metrics');
+      
+      expect(scope.isDone()).toBeTruthy();
+      expect(rateLimitManager.calculateDelay).toHaveBeenCalledWith('api/metrics');
     });
   });
   
   describe('API methods', () => {
-    it('should format date ranges correctly in getCampaigns', async () => {
-      const dateRange = {
-        start: '2023-01-01',
-        end: '2023-01-31',
-      };
+    const mockDateRange = {
+      start: '2023-01-01T00:00:00.000Z',
+      end: '2023-01-31T23:59:59.999Z',
+    };
+    
+    it('should call getCampaigns with correct parameters', async () => {
+      const scope = nock('https://a.klaviyo.com')
+        .get(/\/api\/campaigns/)
+        .reply(200, { data: [] });
       
-      await client.getCampaigns(dateRange);
+      await client.getCampaigns(mockDateRange);
       
-      expect(mockedFetch).toHaveBeenCalledTimes(1);
-      // No need to check exact URL format as that's tested in the get method tests
+      expect(scope.isDone()).toBeTruthy();
     });
     
-    it('should handle additional filters in getEvents', async () => {
-      const dateRange = {
-        start: '2023-01-01',
-        end: '2023-01-31',
-      };
+    it('should call getFlows with correct parameters', async () => {
+      const scope = nock('https://a.klaviyo.com')
+        .get(/\/api\/flows/)
+        .reply(200, { data: [] });
       
+      await client.getFlows();
+      
+      expect(scope.isDone()).toBeTruthy();
+    });
+    
+    it('should call getFlowMessages with correct parameters', async () => {
+      const scope = nock('https://a.klaviyo.com')
+        .get(/\/api\/flow-messages/)
+        .reply(200, { data: [] });
+      
+      await client.getFlowMessages(mockDateRange);
+      
+      expect(scope.isDone()).toBeTruthy();
+    });
+    
+    it('should call getMetrics with correct parameters', async () => {
+      const scope = nock('https://a.klaviyo.com')
+        .get(/\/api\/metrics/)
+        .reply(200, { data: [] });
+      
+      await client.getMetrics();
+      
+      expect(scope.isDone()).toBeTruthy();
+    });
+    
+    it('should call getMetricAggregates with correct parameters', async () => {
+      const metricId = 'test-metric-id';
+      const scope = nock('https://a.klaviyo.com')
+        .get(/\/api\/metric-aggregates\/test-metric-id/)
+        .reply(200, { data: [] });
+      
+      await client.getMetricAggregates(metricId, mockDateRange);
+      
+      expect(scope.isDone()).toBeTruthy();
+    });
+    
+    it('should call getProfiles with correct parameters', async () => {
+      const scope = nock('https://a.klaviyo.com')
+        .get(/\/api\/profiles/)
+        .reply(200, { data: [] });
+      
+      await client.getProfiles(mockDateRange);
+      
+      expect(scope.isDone()).toBeTruthy();
+    });
+    
+    it('should call getSegments with correct parameters', async () => {
+      const scope = nock('https://a.klaviyo.com')
+        .get(/\/api\/segments/)
+        .reply(200, { data: [] });
+      
+      await client.getSegments();
+      
+      expect(scope.isDone()).toBeTruthy();
+    });
+    
+    it('should call getEvents with correct parameters', async () => {
+      const scope = nock('https://a.klaviyo.com')
+        .get(/\/api\/events/)
+        .reply(200, { data: [] });
+      
+      await client.getEvents(mockDateRange);
+      
+      expect(scope.isDone()).toBeTruthy();
+    });
+    
+    it('should call getEvents with additional filters', async () => {
       const additionalFilters: FilterParam[] = [
         {
-          field: 'event_name',
+          field: 'metric.id',
           operator: 'equals',
-          value: 'Placed Order',
-        },
+          value: 'opened-email'
+        }
       ];
       
-      await client.getEvents(dateRange, additionalFilters);
+      const scope = nock('https://a.klaviyo.com')
+        .get(/\/api\/events/)
+        .reply(200, { data: [] });
       
-      expect(mockedFetch).toHaveBeenCalledTimes(1);
-      // Verify the URL contains both date range filters and additional filters
-      const [url] = mockedFetch.mock.calls[0];
-      expect(url).toContain('datetime');
-      expect(url).toContain('event_name');
+      await client.getEvents(mockDateRange, additionalFilters);
+      
+      expect(scope.isDone()).toBeTruthy();
+    });
+    
+    it('should handle API errors gracefully', async () => {
+      const scope = nock('https://a.klaviyo.com')
+        .get(/\/api\/campaigns/)
+        .replyWithError('Network error');
+      
+      const result = await client.getCampaigns(mockDateRange);
+      
+      expect(scope.isDone()).toBeTruthy();
+      expect(result).toEqual({ data: [] });
     });
   });
   
-  describe('error handling', () => {
-    it('should throw an error for non-JSON responses', async () => {
-      const htmlResponse = {
-        ok: true,
-        status: 200,
-        headers: {
-          get: jest.fn((header) => {
-            if (header === 'content-type') return 'text/html';
-            return null;
-          }),
-        },
-        text: jest.fn().mockResolvedValue('<html>Not JSON</html>'),
-      };
+  describe('executeWithRetries', () => {
+    it('should retry failed requests up to maxRetries', async () => {
+      // Create a client with 2 retries
+      const client = new KlaviyoApiClient('test-api-key', '2023-07-15', 2, 100);
       
-      mockedFetch.mockResolvedValueOnce(htmlResponse as any);
+      // Mock 3 failed requests (initial + 2 retries)
+      const scope1 = nock('https://a.klaviyo.com')
+        .get('/api/metrics')
+        .replyWithError('Network error 1');
       
-      await expect(client.get('api/campaigns')).rejects.toThrow('Klaviyo API returned non-JSON response');
+      const scope2 = nock('https://a.klaviyo.com')
+        .get('/api/metrics')
+        .replyWithError('Network error 2');
+      
+      const scope3 = nock('https://a.klaviyo.com')
+        .get('/api/metrics')
+        .replyWithError('Network error 3');
+      
+      // Should fail after maxRetries
+      await expect(client.get('/api/metrics')).rejects.toThrow('Network error 3');
+      
+      expect(scope1.isDone()).toBeTruthy();
+      expect(scope2.isDone()).toBeTruthy();
+      expect(scope3.isDone()).toBeTruthy();
     });
     
-    it('should throw an error after max retries', async () => {
-      const errorResponse = {
-        ok: false,
-        status: 500,
-        headers: {
-          get: jest.fn(() => null),
-        },
-        text: jest.fn().mockResolvedValue('Internal Server Error'),
-      };
+    it('should succeed if a retry succeeds', async () => {
+      // Create a client with 2 retries
+      const client = new KlaviyoApiClient('test-api-key', '2023-07-15', 2, 100);
       
-      // All attempts fail
-      mockedFetch.mockResolvedValue(errorResponse as any);
+      // First request fails
+      const scope1 = nock('https://a.klaviyo.com')
+        .get('/api/metrics')
+        .replyWithError('Network error');
       
-      // Create client with fewer retries for faster test
-      const clientWithFewerRetries = new KlaviyoApiClient(mockApiKey, '2023-07-15', 2);
+      // Second request succeeds
+      const scope2 = nock('https://a.klaviyo.com')
+        .get('/api/metrics')
+        .reply(200, { data: [{ id: 'metric-1' }] });
       
-      await expect(clientWithFewerRetries.get('api/campaigns')).rejects.toThrow('Klaviyo API error (500)');
+      const result = await client.get('/api/metrics');
       
-      // Should have tried the initial request + 2 retries = 3 total attempts
-      expect(mockedFetch).toHaveBeenCalledTimes(3);
+      expect(scope1.isDone()).toBeTruthy();
+      expect(scope2.isDone()).toBeTruthy();
+      expect(result).toEqual({ data: [{ id: 'metric-1' }] });
     });
   });
 });

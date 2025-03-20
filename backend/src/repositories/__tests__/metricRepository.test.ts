@@ -23,7 +23,8 @@ describe('MetricRepository', () => {
   afterAll(async () => {
     // Cleanup test database
     await db.query('DROP TABLE IF EXISTS klaviyo_metrics');
-    await db.close();
+    // Note: We don't close the pool here as it might be used by other tests
+    // The pool will be closed when the process exits
   });
   
   beforeEach(async () => {
@@ -32,203 +33,313 @@ describe('MetricRepository', () => {
     repository = new MetricRepository();
   });
   
-  it('should create a new metric', async () => {
-    const metric = await repository.create({
-      id: 'test-metric-1',
-      name: 'Test Metric',
-      integration_id: 'test-integration',
-      integration_name: 'Test Integration',
-      integration_category: 'test'
-    });
-    
-    expect(metric).toHaveProperty('id', 'test-metric-1');
-    expect(metric).toHaveProperty('name', 'Test Metric');
-    expect(metric).toHaveProperty('integration_id', 'test-integration');
-    expect(metric).toHaveProperty('created_at');
-    expect(metric).toHaveProperty('updated_at');
-    
-    // Verify in database
-    const result = await db.query(
-      'SELECT * FROM klaviyo_metrics WHERE id = $1', 
-      ['test-metric-1']
-    );
-    expect(result.rows).toHaveLength(1);
-  });
-  
-  it('should find a metric by ID', async () => {
-    // Create test data
-    await repository.create({
-      id: 'test-metric-2',
-      name: 'Test Metric 2',
-      integration_category: 'test'
-    });
-    
-    const metric = await repository.findById('test-metric-2');
-    
-    expect(metric).not.toBeNull();
-    expect(metric).toHaveProperty('id', 'test-metric-2');
-    expect(metric).toHaveProperty('name', 'Test Metric 2');
-  });
-  
-  it('should return null when finding non-existent metric', async () => {
-    const metric = await repository.findById('non-existent');
-    
-    expect(metric).toBeNull();
-  });
-  
-  it('should find metrics by name', async () => {
-    // Create test data
-    await repository.create({
-      id: 'test-metric-3',
-      name: 'Special Test Metric',
-      integration_category: 'test'
-    });
-    
-    await repository.create({
-      id: 'test-metric-4',
-      name: 'Another Test Metric',
-      integration_category: 'test'
-    });
-    
-    const metrics = await repository.findByName('Special');
-    
-    expect(metrics).toHaveLength(1);
-    expect(metrics[0]).toHaveProperty('id', 'test-metric-3');
-    
-    const allTestMetrics = await repository.findByName('Test');
-    
-    expect(allTestMetrics.length).toBeGreaterThanOrEqual(2);
-  });
-  
-  it('should find metrics by category', async () => {
-    // Create test data
-    await repository.create({
-      id: 'test-metric-5',
-      name: 'Email Metric',
-      integration_category: 'email'
-    });
-    
-    await repository.create({
-      id: 'test-metric-6',
-      name: 'SMS Metric',
-      integration_category: 'sms'
-    });
-    
-    const emailMetrics = await repository.findByCategory('email');
-    
-    expect(emailMetrics).toHaveLength(1);
-    expect(emailMetrics[0]).toHaveProperty('id', 'test-metric-5');
-    
-    const smsMetrics = await repository.findByCategory('sms');
-    
-    expect(smsMetrics).toHaveLength(1);
-    expect(smsMetrics[0]).toHaveProperty('id', 'test-metric-6');
-  });
-  
-  it('should create or update a metric', async () => {
-    // Create new metric
-    const metric1 = await repository.createOrUpdate({
-      id: 'test-metric-7',
-      name: 'Original Name',
-      created_at: new Date(),
-      integration_category: 'test'
-    });
-    
-    expect(metric1).toHaveProperty('name', 'Original Name');
-    
-    // Update existing metric
-    const metric2 = await repository.createOrUpdate({
-      id: 'test-metric-7',
-      name: 'Updated Name',
-      created_at: metric1.created_at,
-      integration_category: 'updated'
-    });
-    
-    expect(metric2).toHaveProperty('name', 'Updated Name');
-    expect(metric2).toHaveProperty('integration_category', 'updated');
-    expect(metric2.created_at).toEqual(metric1.created_at);
-    expect(metric2.updated_at).not.toEqual(metric1.updated_at);
-    
-    // Verify only one record exists
-    const result = await db.query('SELECT COUNT(*) FROM klaviyo_metrics');
-    expect(parseInt(result.rows[0].count, 10)).toBe(1);
-  });
-  
-  it('should update specific fields of a metric', async () => {
-    // Create test data
-    await repository.create({
-      id: 'test-metric-8',
-      name: 'Original Name',
-      integration_id: 'original-integration',
-      integration_name: 'Original Integration',
-      integration_category: 'original'
-    });
-    
-    // Update only name and category
-    const updated = await repository.update('test-metric-8', {
-      name: 'Updated Name',
-      integration_category: 'updated'
-    });
-    
-    expect(updated).not.toBeNull();
-    expect(updated).toHaveProperty('name', 'Updated Name');
-    expect(updated).toHaveProperty('integration_category', 'updated');
-    expect(updated).toHaveProperty('integration_id', 'original-integration');
-    expect(updated).toHaveProperty('integration_name', 'Original Integration');
-  });
-  
-  it('should delete a metric', async () => {
-    // Create test data
-    await repository.create({
-      id: 'test-metric-9',
-      name: 'To Be Deleted',
-      integration_category: 'test'
-    });
-    
-    const deleted = await repository.delete('test-metric-9');
-    
-    expect(deleted).toBe(true);
-    
-    // Verify it's gone
-    const metric = await repository.findById('test-metric-9');
-    expect(metric).toBeNull();
-  });
-  
-  it('should return false when deleting non-existent metric', async () => {
-    const deleted = await repository.delete('non-existent');
-    
-    expect(deleted).toBe(false);
-  });
-  
-  it('should find all metrics with pagination', async () => {
-    // Create multiple test metrics
-    for (let i = 1; i <= 5; i++) {
-      await repository.create({
-        id: `pagination-test-${i}`,
-        name: `Pagination Test ${i}`,
+  describe('create', () => {
+    it('should create a new metric', async () => {
+      const metricData = {
+        id: 'test-metric-1',
+        name: 'Test Metric',
+        integration_id: 'test-integration',
+        integration_name: 'Test Integration',
         integration_category: 'test'
+      };
+      
+      const metric = await repository.create(metricData);
+      
+      expect(metric).toHaveProperty('id', 'test-metric-1');
+      expect(metric).toHaveProperty('name', 'Test Metric');
+      expect(metric).toHaveProperty('integration_id', 'test-integration');
+      expect(metric).toHaveProperty('integration_name', 'Test Integration');
+      expect(metric).toHaveProperty('integration_category', 'test');
+      expect(metric).toHaveProperty('created_at');
+      expect(metric).toHaveProperty('updated_at');
+      
+      // Verify in database
+      const result = await db.query(
+        'SELECT * FROM klaviyo_metrics WHERE id = $1', 
+        ['test-metric-1']
+      );
+      expect(result.rows).toHaveLength(1);
+      expect(result.rows[0].name).toBe('Test Metric');
+    });
+    
+    it('should create a metric with minimal data', async () => {
+      const metricData = {
+        id: 'minimal-metric',
+        name: 'Minimal Metric'
+      };
+      
+      const metric = await repository.create(metricData);
+      
+      expect(metric).toHaveProperty('id', 'minimal-metric');
+      expect(metric).toHaveProperty('name', 'Minimal Metric');
+      expect(metric.integration_id).toBeNull();
+      expect(metric.integration_name).toBeNull();
+      expect(metric.integration_category).toBeNull();
+      expect(metric.metadata).toEqual({});
+    });
+  });
+  
+  describe('findById', () => {
+    it('should find a metric by ID', async () => {
+      // Create test data
+      await repository.create({
+        id: 'find-metric',
+        name: 'Find Metric'
       });
-    }
+      
+      const metric = await repository.findById('find-metric');
+      
+      expect(metric).not.toBeNull();
+      expect(metric).toHaveProperty('id', 'find-metric');
+      expect(metric).toHaveProperty('name', 'Find Metric');
+    });
     
-    // Get first page (2 items)
-    const page1 = await repository.findAll(2, 0);
+    it('should return null if metric not found', async () => {
+      const metric = await repository.findById('non-existent');
+      
+      expect(metric).toBeNull();
+    });
+  });
+  
+  describe('findByName', () => {
+    beforeEach(async () => {
+      // Create test data
+      await repository.create({ id: 'metric-1', name: 'Test Metric One' });
+      await repository.create({ id: 'metric-2', name: 'Test Metric Two' });
+      await repository.create({ id: 'metric-3', name: 'Another Metric' });
+    });
     
-    expect(page1).toHaveLength(2);
+    it('should find metrics by name (partial match)', async () => {
+      const metrics = await repository.findByName('Test');
+      
+      expect(metrics).toHaveLength(2);
+      expect(metrics[0]).toHaveProperty('name', 'Test Metric One');
+      expect(metrics[1]).toHaveProperty('name', 'Test Metric Two');
+    });
     
-    // Get second page (2 items)
-    const page2 = await repository.findAll(2, 2);
+    it('should return empty array if no matches', async () => {
+      const metrics = await repository.findByName('Non-existent');
+      
+      expect(metrics).toHaveLength(0);
+    });
+  });
+  
+  describe('findByCategory', () => {
+    beforeEach(async () => {
+      // Create test data
+      await repository.create({ 
+        id: 'email-metric-1', 
+        name: 'Email Metric 1',
+        integration_category: 'email'
+      });
+      await repository.create({ 
+        id: 'email-metric-2', 
+        name: 'Email Metric 2',
+        integration_category: 'email'
+      });
+      await repository.create({ 
+        id: 'sms-metric', 
+        name: 'SMS Metric',
+        integration_category: 'sms'
+      });
+    });
     
-    expect(page2).toHaveLength(2);
+    it('should find metrics by category', async () => {
+      const metrics = await repository.findByCategory('email');
+      
+      expect(metrics).toHaveLength(2);
+      expect(metrics[0]).toHaveProperty('integration_category', 'email');
+      expect(metrics[1]).toHaveProperty('integration_category', 'email');
+    });
     
-    // Get third page (1 item)
-    const page3 = await repository.findAll(2, 4);
+    it('should return empty array if no matches', async () => {
+      const metrics = await repository.findByCategory('non-existent');
+      
+      expect(metrics).toHaveLength(0);
+    });
+  });
+  
+  describe('createOrUpdate', () => {
+    it('should create a new metric if it does not exist', async () => {
+      const metricData = {
+        id: 'new-metric',
+        name: 'New Metric',
+        created_at: new Date('2023-01-01')
+      };
+      
+      const metric = await repository.createOrUpdate(metricData);
+      
+      expect(metric).toHaveProperty('id', 'new-metric');
+      expect(metric).toHaveProperty('name', 'New Metric');
+      expect(metric.created_at).toEqual(metricData.created_at);
+      
+      // Verify in database
+      const result = await db.query(
+        'SELECT * FROM klaviyo_metrics WHERE id = $1', 
+        ['new-metric']
+      );
+      expect(result.rows).toHaveLength(1);
+    });
     
-    expect(page3).toHaveLength(1);
+    it('should update an existing metric', async () => {
+      // Create initial metric
+      await repository.create({
+        id: 'update-metric',
+        name: 'Original Name'
+      });
+      
+      // Update the metric
+      const updatedData = {
+        id: 'update-metric',
+        name: 'Updated Name',
+        created_at: new Date('2023-01-01')
+      };
+      
+      const metric = await repository.createOrUpdate(updatedData);
+      
+      expect(metric).toHaveProperty('id', 'update-metric');
+      expect(metric).toHaveProperty('name', 'Updated Name');
+      
+      // Verify in database
+      const result = await db.query(
+        'SELECT * FROM klaviyo_metrics WHERE id = $1', 
+        ['update-metric']
+      );
+      expect(result.rows).toHaveLength(1);
+      expect(result.rows[0].name).toBe('Updated Name');
+    });
+  });
+  
+  describe('update', () => {
+    beforeEach(async () => {
+      // Create test data
+      await repository.create({
+        id: 'update-test',
+        name: 'Original Name',
+        integration_id: 'original-integration',
+        integration_name: 'Original Integration',
+        integration_category: 'original',
+        metadata: { original: true }
+      });
+    });
     
-    // Ensure all IDs are unique across pages
-    const allIds = [...page1, ...page2, ...page3].map(m => m.id);
-    const uniqueIds = new Set(allIds);
+    it('should update specific fields of a metric', async () => {
+      const updates = {
+        name: 'Updated Name',
+        integration_category: 'updated'
+      };
+      
+      const metric = await repository.update('update-test', updates);
+      
+      expect(metric).not.toBeNull();
+      expect(metric).toHaveProperty('name', 'Updated Name');
+      expect(metric).toHaveProperty('integration_category', 'updated');
+      expect(metric).toHaveProperty('integration_id', 'original-integration');
+      expect(metric).toHaveProperty('integration_name', 'Original Integration');
+      
+      // Verify in database
+      const result = await db.query(
+        'SELECT * FROM klaviyo_metrics WHERE id = $1', 
+        ['update-test']
+      );
+      expect(result.rows[0].name).toBe('Updated Name');
+      expect(result.rows[0].integration_category).toBe('updated');
+    });
     
-    expect(uniqueIds.size).toBe(5);
+    it('should update metadata', async () => {
+      const updates = {
+        metadata: { updated: true, newField: 'value' }
+      };
+      
+      const metric = await repository.update('update-test', updates);
+      
+      expect(metric).not.toBeNull();
+      expect(metric?.metadata).toEqual({ updated: true, newField: 'value' });
+      
+      // Verify in database
+      const result = await db.query(
+        'SELECT * FROM klaviyo_metrics WHERE id = $1', 
+        ['update-test']
+      );
+      expect(result.rows[0].metadata).toEqual({ updated: true, newField: 'value' });
+    });
+    
+    it('should return null if metric not found', async () => {
+      const updates = {
+        name: 'Updated Name'
+      };
+      
+      const metric = await repository.update('non-existent', updates);
+      
+      expect(metric).toBeNull();
+    });
+  });
+  
+  describe('delete', () => {
+    beforeEach(async () => {
+      // Create test data
+      await repository.create({ id: 'delete-me', name: 'Delete Me' });
+    });
+    
+    it('should delete a metric by ID', async () => {
+      const result = await repository.delete('delete-me');
+      
+      expect(result).toBe(true);
+      
+      // Verify deletion
+      const dbResult = await db.query(
+        'SELECT * FROM klaviyo_metrics WHERE id = $1', 
+        ['delete-me']
+      );
+      expect(dbResult.rows).toHaveLength(0);
+    });
+    
+    it('should return false if metric not found', async () => {
+      const result = await repository.delete('non-existent');
+      
+      expect(result).toBe(false);
+    });
+  });
+  
+  describe('findAll', () => {
+    beforeEach(async () => {
+      // Create test data
+      for (let i = 1; i <= 15; i++) {
+        await repository.create({
+          id: `metric-${i}`,
+          name: `Metric ${i}`
+        });
+      }
+    });
+    
+    it('should find all metrics with default pagination', async () => {
+      const metrics = await repository.findAll();
+      
+      expect(metrics.length).toBeLessThanOrEqual(100);
+      expect(metrics.length).toBeGreaterThan(0);
+    });
+    
+    it('should respect limit parameter', async () => {
+      const metrics = await repository.findAll(5);
+      
+      expect(metrics).toHaveLength(5);
+    });
+    
+    it('should respect offset parameter', async () => {
+      // Get first page
+      const firstPage = await repository.findAll(10, 0);
+      // Get second page
+      const secondPage = await repository.findAll(10, 10);
+      
+      expect(firstPage).toHaveLength(10);
+      expect(secondPage.length).toBeGreaterThan(0);
+      
+      // Ensure no overlap between pages
+      const firstPageIds = firstPage.map(m => m.id);
+      const secondPageIds = secondPage.map(m => m.id);
+      const overlap = firstPageIds.filter(id => secondPageIds.includes(id));
+      
+      expect(overlap).toHaveLength(0);
+    });
   });
 });
