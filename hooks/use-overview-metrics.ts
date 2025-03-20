@@ -15,8 +15,18 @@ export function useOverviewMetrics(params: DateRangeParam = {}) {
     () => getOverviewMetrics({ dateRange: params.dateRange || dateRangeParam }),
     {
       enabled: true,
-      // Refetch every 5 minutes
-      refetchInterval: 5 * 60 * 1000,
+      // Refetch every 30 minutes to avoid rate limits
+      refetchInterval: 30 * 60 * 1000,
+      // Provide initial data to prevent UI flashing
+      initialData: {
+        revenue: { current: 0, previous: 0, change: 0 },
+        subscribers: { current: 0, previous: 0, change: 0 },
+        openRate: { current: 0, previous: 0, change: 0 },
+        clickRate: { current: 0, previous: 0, change: 0 },
+        conversionRate: { current: 0, previous: 0, change: 0 },
+        formSubmissions: { current: 0, previous: 0, change: 0 },
+        channels: []
+      }
     }
   );
 }

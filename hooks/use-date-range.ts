@@ -256,11 +256,16 @@ export function useDateRange(defaultOption: DateRangeOption = 'last-30-days') {
   // Debounce the date range parameter to prevent rapid API requests
   const dateRangeParam = useDebounce(rawDateRangeParam, 500);
   
-  // Clear cache when date range changes
+  // Selectively clear cache when date range changes
   useEffect(() => {
     if (prevDateRangeParamRef.current && prevDateRangeParamRef.current !== dateRangeParam) {
-      // Clear cache for all endpoints when date range changes
-      clearCache();
+      // Clear cache only for endpoints that depend on date range
+      clearCache('/overview');
+      clearCache('/campaigns');
+      clearCache('/flows');
+      clearCache('/forms');
+      clearCache('/segments');
+      console.log(`Cleared cached data for date range change from ${prevDateRangeParamRef.current} to ${dateRangeParam}`);
     }
     
     prevDateRangeParamRef.current = dateRangeParam;

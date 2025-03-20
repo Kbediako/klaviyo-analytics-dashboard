@@ -22,8 +22,8 @@ export class KlaviyoApiClient {
   constructor(
     apiKey: string, 
     apiVersion: string = '2023-07-15',
-    maxRetries: number = 3,
-    retryDelay: number = 1000
+    maxRetries: number = 5,
+    retryDelay: number = 2000
   ) {
     if (!apiKey) {
       throw new Error('Klaviyo API key is required');
@@ -44,8 +44,15 @@ export class KlaviyoApiClient {
    * @returns Response data
    */
   async get<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
+    // Static delay between API calls to avoid rate limiting
+    await this.delay(1000);
+    
     let retries = 0;
     let lastError: Error | null = null;
+    
+    // Add request ID for logging
+    const requestId = Math.random().toString(36).substring(2, 9);
+    console.log(`API Request [${requestId}]: ${endpoint} starting`);
 
     while (retries <= this.maxRetries) {
       try {
@@ -56,18 +63,23 @@ export class KlaviyoApiClient {
           url.searchParams.append(key, value);
         });
         
+        console.log(`API Request [${requestId}]: ${endpoint} attempt ${retries + 1}/${this.maxRetries + 1}`);
+        
         const response = await fetch(url.toString(), {
           method: 'GET',
           headers: this.getHeaders(),
         });
         
         if (!response.ok) {
-          // If rate limited (429), retry after delay
+          // If rate limited (429), retry after delay with longer backoff
           if (response.status === 429) {
             const retryAfter = response.headers.get('Retry-After');
-            const retryDelay = retryAfter ? parseInt(retryAfter, 10) * 1000 : this.retryDelay;
+            // Use server's retry-after or a larger delay that increases with each retry
+            const retryDelay = retryAfter 
+              ? parseInt(retryAfter, 10) * 1000 
+              : this.retryDelay * Math.pow(3, retries); // Larger exponential backoff
             
-            console.warn(`Rate limited by Klaviyo API. Retrying after ${retryDelay}ms...`);
+            console.warn(`API Request [${requestId}]: Rate limited (429). Retrying after ${retryDelay}ms...`);
             await this.delay(retryDelay);
             retries++;
             continue;
@@ -78,19 +90,23 @@ export class KlaviyoApiClient {
           throw new Error(`Klaviyo API error (${response.status}): ${errorText}`);
         }
         
-        return response.json() as Promise<T>;
+        const data = await response.json() as T;
+        console.log(`API Request [${requestId}]: ${endpoint} completed successfully`);
+        return data;
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
         
         // If we've reached max retries, throw the last error
         if (retries >= this.maxRetries) {
-          console.error(`Failed after ${retries} retries:`, lastError);
+          console.error(`API Request [${requestId}]: Failed after ${retries} retries:`, lastError);
           throw lastError;
         }
         
-        // Otherwise, retry after delay
-        console.warn(`Request failed (attempt ${retries + 1}/${this.maxRetries + 1}):`, lastError.message);
-        await this.delay(this.retryDelay * Math.pow(2, retries)); // Exponential backoff
+        // Otherwise, retry after delay with more aggressive backoff
+        const delay = this.retryDelay * Math.pow(3, retries); // More aggressive exponential backoff
+        console.warn(`API Request [${requestId}]: Request failed (attempt ${retries + 1}/${this.maxRetries + 1}): ${lastError.message}`);
+        console.warn(`API Request [${requestId}]: Retrying after ${delay}ms...`);
+        await this.delay(delay);
         retries++;
       }
     }
@@ -129,10 +145,20 @@ export class KlaviyoApiClient {
    * @returns Campaigns data
    */
   async getCampaigns(dateRange: DateRange) {
-    // For now, return mock data instead of making API calls
-    return Promise.resolve({
-      data: []
-    });
+    try {
+      // Get campaigns from Klaviyo API
+      const response = await this.get('campaigns', {
+        'filter': `equals(messages.channel,"email")`,
+        'include': 'tags'
+      });
+      
+      console.log('Live API - Campaigns response:', JSON.stringify(response).substring(0, 200) + '...');
+      return response;
+    } catch (error) {
+      console.error('Error fetching campaigns from Klaviyo API:', error);
+      // Fallback to empty data on error
+      return { data: [] };
+    }
   }
 
   /**
@@ -141,10 +167,20 @@ export class KlaviyoApiClient {
    * @returns Flows data
    */
   async getFlows() {
-    // For now, return mock data instead of making API calls
-    return Promise.resolve({
-      data: []
-    });
+    try {
+      // Get flows from Klaviyo API
+      const response = await this.get('flows', {
+        'include': 'tags',
+        'fields[flow]': 'name,status,created,updated,trigger_type,tags'
+      });
+      
+      console.log('Live API - Flows response:', JSON.stringify(response).substring(0, 200) + '...');
+      return response;
+    } catch (error) {
+      console.error('Error fetching flows from Klaviyo API:', error);
+      // Fallback to empty data on error
+      return { data: [] };
+    }
   }
 
   /**
@@ -154,10 +190,25 @@ export class KlaviyoApiClient {
    * @returns Flow messages data
    */
   async getFlowMessages(dateRange: DateRange) {
-    // For now, return mock data instead of making API calls
-    return Promise.resolve({
-      data: []
-    });
+    try {
+      // Format dates for Klaviyo API
+      const startDate = new Date(dateRange.start).toISOString();
+      const endDate = new Date(dateRange.end).toISOString();
+      
+      // Get flow messages from Klaviyo API
+      const response = await this.get('flow-messages', {
+        'fields[flow-message]': 'name,content,created,updated,status,position',
+        'filter': `greater-or-equal(created,${startDate}),less-or-equal(created,${endDate})`,
+        'page[size]': '50'
+      });
+      
+      console.log('Live API - Flow Messages response:', JSON.stringify(response).substring(0, 200) + '...');
+      return response;
+    } catch (error) {
+      console.error('Error fetching flow messages from Klaviyo API:', error);
+      // Fallback to empty data on error
+      return { data: [] };
+    }
   }
 
   /**
@@ -166,10 +217,20 @@ export class KlaviyoApiClient {
    * @returns Metrics data
    */
   async getMetrics() {
-    // For now, return mock data instead of making API calls
-    return Promise.resolve({
-      data: []
-    });
+    try {
+      // Get metrics from Klaviyo API
+      const response = await this.get('metrics', {
+        'filter': 'equals(integration,$integration)',
+        'page[size]': '50'
+      });
+      
+      console.log('Live API - Metrics response:', JSON.stringify(response).substring(0, 200) + '...');
+      return response;
+    } catch (error) {
+      console.error('Error fetching metrics from Klaviyo API:', error);
+      // Fallback to empty data on error
+      return { data: [] };
+    }
   }
 
   /**
@@ -180,10 +241,25 @@ export class KlaviyoApiClient {
    * @returns Metric aggregates data
    */
   async getMetricAggregates(metricId: string, dateRange: DateRange) {
-    // For now, return mock data instead of making API calls
-    return Promise.resolve({
-      data: []
-    });
+    try {
+      // Format dates for Klaviyo API
+      const startDate = new Date(dateRange.start).toISOString();
+      const endDate = new Date(dateRange.end).toISOString();
+      
+      // Get metric aggregates from Klaviyo API
+      const response = await this.get(`metric-aggregates/${metricId}`, {
+        'filter': `greater-or-equal(datetime,${startDate}),less-or-equal(datetime,${endDate})`,
+        'page[size]': '100',
+        'sort': 'datetime'
+      });
+      
+      console.log('Live API - Metric Aggregates response:', JSON.stringify(response).substring(0, 200) + '...');
+      return response;
+    } catch (error) {
+      console.error(`Error fetching metric aggregates for ${metricId} from Klaviyo API:`, error);
+      // Fallback to empty data on error
+      return { data: [] };
+    }
   }
 
   /**
@@ -193,10 +269,25 @@ export class KlaviyoApiClient {
    * @returns Profiles data
    */
   async getProfiles(dateRange: DateRange) {
-    // For now, return mock data instead of making API calls
-    return Promise.resolve({
-      data: []
-    });
+    try {
+      // Format dates for Klaviyo API
+      const startDate = new Date(dateRange.start).toISOString();
+      const endDate = new Date(dateRange.end).toISOString();
+      
+      // Get profiles from Klaviyo API
+      const response = await this.get('profiles', {
+        'fields[profile]': 'email,phone_number,first_name,last_name,created,updated,subscriptions',
+        'filter': `greater-or-equal(created,${startDate}),less-or-equal(created,${endDate})`,
+        'page[size]': '50'
+      });
+      
+      console.log('Live API - Profiles response:', JSON.stringify(response).substring(0, 200) + '...');
+      return response;
+    } catch (error) {
+      console.error('Error fetching profiles from Klaviyo API:', error);
+      // Fallback to empty data on error
+      return { data: [] };
+    }
   }
 
   /**
@@ -205,10 +296,20 @@ export class KlaviyoApiClient {
    * @returns Segments data
    */
   async getSegments() {
-    // For now, return mock data instead of making API calls
-    return Promise.resolve({
-      data: []
-    });
+    try {
+      // Get segments from Klaviyo API
+      const response = await this.get('segments', {
+        'fields[segment]': 'name,created,updated,profile_count',
+        'page[size]': '50'
+      });
+      
+      console.log('Live API - Segments response:', JSON.stringify(response).substring(0, 200) + '...');
+      return response;
+    } catch (error) {
+      console.error('Error fetching segments from Klaviyo API:', error);
+      // Fallback to empty data on error
+      return { data: [] };
+    }
   }
 
   /**
@@ -219,11 +320,31 @@ export class KlaviyoApiClient {
    * @returns Events data
    */
   async getEvents(dateRange: DateRange, filter: string = '') {
-    // For now, return mock data instead of making API calls
-    // This will allow the frontend to work without valid API responses
-    return Promise.resolve({
-      data: []
-    });
+    try {
+      // Format dates for Klaviyo API
+      const startDate = new Date(dateRange.start).toISOString();
+      const endDate = new Date(dateRange.end).toISOString();
+      
+      // Build filter string
+      let filterStr = `greater-or-equal(datetime,${startDate}),less-or-equal(datetime,${endDate})`;
+      if (filter) {
+        filterStr += `,${filter}`;
+      }
+      
+      // Get events from Klaviyo API
+      const response = await this.get('events', {
+        'filter': filterStr,
+        'sort': '-datetime',
+        'page[size]': '50'
+      });
+      
+      console.log('Live API - Events response:', JSON.stringify(response).substring(0, 200) + '...');
+      return response;
+    } catch (error) {
+      console.error('Error fetching events from Klaviyo API:', error);
+      // Fallback to empty data on error
+      return { data: [] };
+    }
   }
 }
 

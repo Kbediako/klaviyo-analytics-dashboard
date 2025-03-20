@@ -15,8 +15,10 @@ export function useCampaigns(params: DateRangeParam = {}) {
     () => getCampaigns({ dateRange: params.dateRange || dateRangeParam }),
     {
       enabled: true,
-      // Refetch every 5 minutes
-      refetchInterval: 5 * 60 * 1000,
+      // Reduced refetch interval to 15 minutes to avoid rate limiting
+      refetchInterval: 15 * 60 * 1000,
+      // Prefill with empty array to avoid null checks
+      initialData: []
     }
   );
 }

@@ -59,10 +59,23 @@ class Cache {
   }
   
   /**
-   * Clear all values from the cache
+   * Clear all values from the cache or those matching a pattern
+   * 
+   * @param pattern Optional RegExp to match cache keys
    */
-  clear(): void {
-    this.cache.clear();
+  clear(pattern?: RegExp): void {
+    if (!pattern) {
+      this.cache.clear();
+      return;
+    }
+    
+    // Delete all keys matching the pattern
+    for (const key of this.cache.keys()) {
+      if (pattern.test(key)) {
+        this.cache.delete(key);
+        console.log(`Deleted cache key: ${key}`);
+      }
+    }
   }
   
   /**

@@ -15,8 +15,13 @@ export function cacheMiddleware(ttlSeconds: number = 300) {
       return;
     }
     
-    // Create a cache key from the request URL and query parameters
-    const cacheKey = `${req.originalUrl || req.url}`;
+    // Create a cache key from the request URL and date range
+    const dateRange = req.query.dateRange as string;
+    // If no date range, include the URL only
+    // If there is a date range, include it in the cache key
+    const cacheKey = dateRange 
+      ? `${req.originalUrl || req.url}:${dateRange}`
+      : `${req.originalUrl || req.url}`;
     
     try {
       // Try to get the cached response
@@ -57,11 +62,13 @@ export function cacheMiddleware(ttlSeconds: number = 300) {
  */
 export function clearCacheMiddleware(endpoint: string) {
   return (req: Request, res: Response, next: NextFunction) => {
-    // Create a cache key from the endpoint
-    const cacheKey = endpoint;
+    // Create a cache key pattern to match all variations of this endpoint
+    const cacheKeyPattern = new RegExp(`^${endpoint}`);
     
-    // Delete the cached response
-    cache.delete(cacheKey);
+    // Clear all cache entries that match the pattern
+    cache.clear(cacheKeyPattern);
+    
+    console.log(`Cache cleared for pattern: ${cacheKeyPattern}`);
     
     // Continue to the next middleware
     next();

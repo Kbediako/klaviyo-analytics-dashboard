@@ -15,8 +15,10 @@ export function useSegments(enabled: boolean = true) {
     () => getSegments({ dateRange: dateRangeParam }),
     {
       enabled,
-      // Refetch every 5 minutes
-      refetchInterval: 5 * 60 * 1000,
+      // Refetch every 30 minutes to respect rate limits
+      refetchInterval: 30 * 60 * 1000,
+      // Provide initial empty array to prevent null checking
+      initialData: []
     }
   );
 }

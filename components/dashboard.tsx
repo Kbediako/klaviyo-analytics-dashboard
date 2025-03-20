@@ -48,6 +48,7 @@ export function Dashboard() {
             <BarChartIcon className="h-4 w-4 text-primary-foreground" />
           </div>
           <span>EDM Reporting</span>
+          <Badge variant="default" className="ml-2 text-xs">Live API</Badge>
         </div>
         
         <div className="ml-auto flex items-center gap-4">
@@ -72,14 +73,14 @@ export function Dashboard() {
           
           <Button 
             variant="outline" 
-            size="icon" 
-            className="rounded-lg"
+            className="rounded-lg flex items-center gap-2"
             onClick={() => {
               clearCache();
               window.location.reload();
             }}
           >
             <BellIcon className="h-4 w-4" />
+            <span>Clear Cache</span>
           </Button>
           
           <Avatar>
@@ -208,29 +209,45 @@ export function Dashboard() {
           <TabsContent value="campaigns" className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold tracking-tight">Campaigns</h2>
+              <Badge variant="outline" className="flex gap-2 items-center">
+                <div className={activeTab === 'campaigns' ? "h-2 w-2 animate-pulse rounded-full bg-green-500" : "h-2 w-2 rounded-full bg-gray-300"}></div>
+                {activeTab === 'campaigns' ? 'Live Data' : 'Inactive'}
+              </Badge>
             </div>
-            {activeTab === 'campaigns' && <CampaignsTable />}
+            <CampaignsTable />
           </TabsContent>
           
           <TabsContent value="flows" className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold tracking-tight">Flows</h2>
+              <Badge variant="outline" className="flex gap-2 items-center">
+                <div className={activeTab === 'flows' ? "h-2 w-2 animate-pulse rounded-full bg-green-500" : "h-2 w-2 rounded-full bg-gray-300"}></div>
+                {activeTab === 'flows' ? 'Live Data' : 'Inactive'}
+              </Badge>
             </div>
-            {activeTab === 'flows' && <FlowsTable />}
+            <FlowsTable />
           </TabsContent>
           
           <TabsContent value="forms" className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold tracking-tight">Forms</h2>
+              <Badge variant="outline" className="flex gap-2 items-center">
+                <div className={activeTab === 'forms' ? "h-2 w-2 animate-pulse rounded-full bg-green-500" : "h-2 w-2 rounded-full bg-gray-300"}></div>
+                {activeTab === 'forms' ? 'Live Data' : 'Inactive'}
+              </Badge>
             </div>
-            {activeTab === 'forms' && <FormsTable />}
+            <FormsTable />
           </TabsContent>
           
           <TabsContent value="segments" className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold tracking-tight">Segments</h2>
+              <Badge variant="outline" className="flex gap-2 items-center">
+                <div className={activeTab === 'segments' ? "h-2 w-2 animate-pulse rounded-full bg-green-500" : "h-2 w-2 rounded-full bg-gray-300"}></div>
+                {activeTab === 'segments' ? 'Live Data' : 'Inactive'}
+              </Badge>
             </div>
-            {activeTab === 'segments' && <SegmentsTable />}
+            <SegmentsTable />
           </TabsContent>
         </Tabs>
       </div>

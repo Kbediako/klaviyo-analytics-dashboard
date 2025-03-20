@@ -22,8 +22,10 @@ export function useRevenueChartData(params: DateRangeParam = {}) {
     }),
     {
       enabled: true,
-      // Refetch every 5 minutes
-      refetchInterval: 5 * 60 * 1000,
+      // Refetch every 30 minutes to respect rate limits
+      refetchInterval: 30 * 60 * 1000,
+      // Provide initial data to prevent UI flashing
+      initialData: []
     }
   );
 }
@@ -40,8 +42,10 @@ export function useChannelDistributionData(params: DateRangeParam = {}) {
     }),
     {
       enabled: true,
-      // Refetch every 5 minutes
-      refetchInterval: 5 * 60 * 1000,
+      // Refetch every 30 minutes to respect rate limits
+      refetchInterval: 30 * 60 * 1000,
+      // Provide initial data to prevent UI flashing
+      initialData: []
     }
   );
 }
@@ -58,8 +62,10 @@ export function useTopSegmentsData(params: DateRangeParam = {}) {
     }),
     {
       enabled: true,
-      // Refetch every 5 minutes
-      refetchInterval: 5 * 60 * 1000,
+      // Refetch every 30 minutes to respect rate limits
+      refetchInterval: 30 * 60 * 1000,
+      // Provide initial data to prevent UI flashing
+      initialData: []
     }
   );
 }
@@ -76,8 +82,10 @@ export function useTopFlowsData(params: DateRangeParam = {}) {
     }),
     {
       enabled: true,
-      // Refetch every 5 minutes
-      refetchInterval: 5 * 60 * 1000,
+      // Refetch every 30 minutes to respect rate limits
+      refetchInterval: 30 * 60 * 1000,
+      // Provide initial data to prevent UI flashing
+      initialData: []
     }
   );
 }
@@ -94,8 +102,10 @@ export function useTopFormsData(params: DateRangeParam = {}) {
     }),
     {
       enabled: true,
-      // Refetch every 5 minutes
-      refetchInterval: 5 * 60 * 1000,
+      // Refetch every 30 minutes to respect rate limits
+      refetchInterval: 30 * 60 * 1000,
+      // Provide initial data to prevent UI flashing
+      initialData: []
     }
   );
 }
