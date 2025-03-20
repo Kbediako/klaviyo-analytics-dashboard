@@ -22,11 +22,24 @@ DEBUG=true
 
 ### Important Metric IDs
 
-The dashboard uses specific metric IDs to retrieve and display data:
+The dashboard requires specific Klaviyo metric IDs to retrieve data. Unlike most APIs, Klaviyo does not allow querying metrics by name - you must use their specific IDs:
 
 - **Shopify Placed Order Metric ID:** `WRfUa5`
   - Used in `overviewService.ts` to calculate revenue metrics
   - This is pre-configured in the code for convenience
+
+For other metrics, the system attempts to find appropriate metric IDs by:
+1. Retrieving all available metrics from the `/api/metrics` endpoint
+2. Scanning for metrics with relevant names (e.g., "Opened Email", "Clicked Email")
+3. Extracting the IDs of these metrics for use in subsequent API calls
+
+**Important**: Each Klaviyo account has unique metric IDs. If your account doesn't have metrics with standard names, you'll need to manually configure these IDs in the code.
+
+Typical metric types needed:
+- Revenue/Placed Order metrics
+- Email open metrics
+- Email click metrics
+- Conversion metrics
 
 ### API Version
 
@@ -119,7 +132,7 @@ If you notice that some metrics don't match your Klaviyo dashboard:
   2. Adjust the multipliers in the transformation functions to match your expected values
   3. If available, implement specific metric IDs for your key performance indicators
 
-### 3. API Authentication Errors
+### 4. API Authentication Errors
 
 If experiencing 401/403 errors:
 

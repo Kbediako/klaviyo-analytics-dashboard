@@ -51,25 +51,44 @@ export async function getOverviewMetrics(dateRange: DateRange): Promise<Overview
     const metricsResponse = await klaviyoApiClient.getMetrics();
     
     // Extract the metrics we need (revenue, open rate, etc.)
+    // Define specific metric IDs we need to use
+    // For Klaviyo, we must use actual metric IDs as documented in their API
     let metricIds = {
       // Using the provided Shopify Placed Order Metric ID
-      revenue: 'WRfUa5',
+      revenue: 'WRfUa5', // Shopify Placed Order Metric ID
       opened: '',
       clicked: '',
       converted: ''
     };
     
+    console.log('Metrics from API:', JSON.stringify(metricsResponse && metricsResponse.data ? metricsResponse.data.slice(0, 3) : []).substring(0, 500) + '...');
+    
+    // Important: We need to map the metric IDs from the API response
     if (metricsResponse && metricsResponse.data && metricsResponse.data.length > 0) {
-      // Find the metric IDs we need for other metrics
+      console.log(`Found ${metricsResponse.data.length} metrics in Klaviyo account`);
+      
+      // Log all metrics for debugging
+      metricsResponse.data.forEach((metric: any) => {
+        const id = metric.id;
+        const name = metric.attributes?.name || 'Unknown';
+        console.log(`Metric: ${name} (ID: ${id})`);
+      });
+      
+      // Find the metric IDs we need based on names in the metrics API response
       for (const metric of metricsResponse.data) {
-        const name = metric.attributes?.name?.toLowerCase() || '';
-        // We already have revenue metric ID, so just find the others
+        const name = (metric.attributes?.name || '').toLowerCase();
+        const id = metric.id;
+        
+        // Map standard Klaviyo metric names to our needed categories
         if (name.includes('opened email')) {
-          metricIds.opened = metric.id;
+          metricIds.opened = id;
+          console.log(`Found opened email metric: ${id}`);
         } else if (name.includes('clicked email')) {
-          metricIds.clicked = metric.id;
-        } else if (name.includes('converted')) {
-          metricIds.converted = metric.id;
+          metricIds.clicked = id;
+          console.log(`Found clicked email metric: ${id}`);
+        } else if (name.includes('converted') || name.includes('conversion')) {
+          metricIds.converted = id;
+          console.log(`Found conversion metric: ${id}`);
         }
       }
     }

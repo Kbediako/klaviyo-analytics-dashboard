@@ -41,7 +41,10 @@ To transition to the live Klaviyo API:
 2. **Important Metric IDs**
    - The dashboard uses specific Klaviyo metric IDs for accurate data:
      - **Shopify Placed Order Metric ID:** `WRfUa5` (used for revenue calculations)
-   - These IDs are pre-configured in the service implementations
+   - Klaviyo requires specific metric IDs for data retrieval - you cannot query by metric name
+   - These IDs are specific to each Klaviyo account and must be configured accordingly
+   - The system will attempt to find appropriate metric IDs by scanning metric names in the `/api/metrics` response
+   - If automatic discovery fails, you'll need to manually configure these IDs in the service implementations
 
 3. **API Client Configuration**
    - The API client at `/backend/src/services/klaviyoApiClient.ts` handles all Klaviyo API requests
