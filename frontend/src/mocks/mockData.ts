@@ -20,6 +20,41 @@ export const mockData = {
       change: 12
     }
   },
+  // Chart data for visualizations
+  charts: {
+    revenueOverTime: [
+      { date: '2023-01', campaigns: 4200, flows: 3100, forms: 1800, other: 950 },
+      { date: '2023-02', campaigns: 4500, flows: 3300, forms: 1900, other: 1000 },
+      { date: '2023-03', campaigns: 4800, flows: 3500, forms: 2000, other: 1050 },
+      { date: '2023-04', campaigns: 5100, flows: 3700, forms: 2100, other: 1100 },
+      { date: '2023-05', campaigns: 5400, flows: 3900, forms: 2200, other: 1150 },
+      { date: '2023-06', campaigns: 5700, flows: 4100, forms: 2300, other: 1200 }
+    ],
+    channelDistribution: [
+      { name: 'Campaigns', value: 42 },
+      { name: 'Flows', value: 35 },
+      { name: 'Forms', value: 15 },
+      { name: 'Other', value: 8 }
+    ],
+    topSegments: [
+      { name: 'VIP Customers', conversionRate: 42, count: 5842, revenue: 28450 },
+      { name: 'Recent Purchasers', conversionRate: 35, count: 12480, revenue: 42680 },
+      { name: 'Cart Abandoners', conversionRate: 28, count: 8640, revenue: 15280 },
+      { name: 'Email Engaged', conversionRate: 22, count: 18540, revenue: 24850 }
+    ],
+    topFlows: [
+      { name: 'Welcome Series', recipients: 8450, conversionRate: 32 },
+      { name: 'Abandoned Cart', recipients: 6280, conversionRate: 28 },
+      { name: 'Post-Purchase', recipients: 12480, conversionRate: 24 },
+      { name: 'Win-Back', recipients: 5840, conversionRate: 18 }
+    ],
+    topForms: [
+      { name: 'Newsletter Signup', views: 12480, submissionRate: 38 },
+      { name: 'Exit Intent Popup', views: 28450, submissionRate: 24 },
+      { name: 'Product Registration', views: 8640, submissionRate: 42 },
+      { name: 'Contact Form', views: 5840, submissionRate: 32 }
+    ]
+  },
   campaigns: [
     {
       id: 'campaign1',

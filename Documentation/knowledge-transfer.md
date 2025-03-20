@@ -178,26 +178,35 @@ describe('GET /api/campaigns', () => {
 
 #### 3. Mock API Server
 
-For more comprehensive testing, you can create a mock API server:
+For more comprehensive testing, you can use the mock API server that's been implemented:
 
-1. Create a mock server file in your backend:
+1. The mock server is located at `backend/src/tests/mockServer.ts` and provides mock data for all endpoints:
 
 ```typescript
-// backend/src/mockServer.ts
+// Example of mock server implementation
 import express from 'express';
 import cors from 'cors';
-import mockResponses from './tests/mockData';
+import { mockData } from './mockData';
 
 const app = express();
 app.use(cors());
 
 // Mock endpoints that return predefined data
 app.get('/api/overview', (req, res) => {
-  res.json(mockResponses.overview);
+  res.json(mockData.overview);
 });
 
 app.get('/api/campaigns', (req, res) => {
-  res.json(mockResponses.campaigns);
+  res.json(mockData.campaigns);
+});
+
+// Chart data endpoints for visualizations
+app.get('/api/charts/revenue', (req, res) => {
+  res.json(mockData.charts.revenueOverTime);
+});
+
+app.get('/api/charts/distribution', (req, res) => {
+  res.json(mockData.charts.channelDistribution);
 });
 
 // Add other endpoints...
@@ -208,16 +217,7 @@ app.listen(PORT, () => {
 });
 ```
 
-2. Add a script to run it:
-
-```json
-// In backend/package.json
-"scripts": {
-  "mock-server": "ts-node src/mockServer.ts"
-}
-```
-
-3. Point your frontend to the mock server during testing:
+2. Run the mock server using the provided script:
 
 ```bash
 # Start the mock server
@@ -229,33 +229,45 @@ cd ..
 NEXT_PUBLIC_API_URL=http://localhost:3002/api npm run dev
 ```
 
+3. Or use the combined script in the root package.json:
+
+```bash
+# Run both the frontend and mock server together
+npm run dev:mock
+```
+
 #### 4. MSW (Mock Service Worker)
 
-For advanced frontend testing, MSW provides a way to intercept network requests:
+For advanced frontend testing, MSW is set up to intercept network requests:
 
-1. Install MSW:
-```bash
-npm install --save-dev msw
-```
+1. MSW is already configured in the `frontend/src/mocks` directory:
+   - `mockData.ts`: Contains mock data for all endpoints
+   - `handlers.ts`: Defines request handlers for each endpoint
+   - `browser.ts` and `server.ts`: Set up MSW for browser and server environments
+   - `index.ts`: Entry point that conditionally initializes MSW
 
-2. Set up handlers for your API endpoints:
+2. The handlers include all API endpoints, including chart data:
 ```typescript
-// mocks/handlers.js
-import { rest } from 'msw'
-import mockData from './mockData'
+// Example from frontend/src/mocks/handlers.ts
+rest.get(`${API_BASE_URL}/charts/revenue`, (_req, res, ctx) => {
+  return res(
+    ctx.status(200),
+    ctx.json(mockData.charts.revenueOverTime)
+  );
+}),
 
-export const handlers = [
-  rest.get('http://localhost:3001/api/overview', (req, res, ctx) => {
-    return res(ctx.json(mockData.overview))
-  }),
-  rest.get('http://localhost:3001/api/campaigns', (req, res, ctx) => {
-    return res(ctx.json(mockData.campaigns))
-  }),
-  // Add other endpoints...
-]
+rest.get(`${API_BASE_URL}/charts/distribution`, (_req, res, ctx) => {
+  return res(
+    ctx.status(200),
+    ctx.json(mockData.charts.channelDistribution)
+  );
+})
 ```
 
-3. Set up the service worker and integrate with your tests or development environment
+3. To use MSW during development:
+```bash
+NEXT_PUBLIC_API_MOCKING=enabled npm run dev
+```
 
 #### 5. Using the Existing E2E Test Mock Mode
 
@@ -292,6 +304,59 @@ describe('Klaviyo API Client', () => {
   });
 });
 ```
+
+#### 7. Mocking Chart and Visualization Data
+
+The mock data includes structured data for all visualizations in the dashboard:
+
+1. **Chart Data Structure**: The mock data includes specific structures for different chart types:
+   ```typescript
+   charts: {
+     // Time series data for line charts
+     revenueOverTime: [
+       { date: '2023-01', campaigns: 4200, flows: 3100, forms: 1800, other: 950 },
+       { date: '2023-02', campaigns: 4500, flows: 3300, forms: 1900, other: 1000 },
+       // ...more data points
+     ],
+     
+     // Pie/donut chart data
+     channelDistribution: [
+       { name: 'Campaigns', value: 42 },
+       { name: 'Flows', value: 35 },
+       // ...more segments
+     ],
+     
+     // Data for other visualizations
+     topSegments: [ /* ... */ ],
+     topFlows: [ /* ... */ ],
+     topForms: [ /* ... */ ]
+   }
+   ```
+
+2. **Dedicated Chart Endpoints**: The mock server provides specific endpoints for chart data:
+   ```
+   GET /api/charts/revenue         // Time series data for revenue charts
+   GET /api/charts/distribution    // Channel distribution data for pie charts
+   GET /api/charts/top-segments    // Top performing segments data
+   GET /api/charts/top-flows       // Top performing flows data
+   GET /api/charts/top-forms       // Top performing forms data
+   ```
+
+3. **Testing Visualizations**: When testing charts and visualizations:
+   - Ensure the mock data structure matches what the visualization components expect
+   - Include edge cases like empty data sets, single data points, or extreme values
+   - Test different date ranges to ensure visualizations handle varying amounts of data
+   - For interactive charts, test with both mouse and keyboard interactions
+
+4. **Recharts Integration**: The dashboard uses Recharts for visualizations, which requires specific data structures:
+   - Line/area charts expect an array of objects with consistent property names
+   - Pie/donut charts expect objects with `name` and `value` properties
+   - Bar charts expect consistent data keys for proper rendering
+
+5. **Responsive Testing**: When testing visualizations with mock data:
+   - Verify charts render correctly at different viewport sizes
+   - Test that tooltips and legends display the correct mock data
+   - Ensure color schemes and styling are applied consistently
 
 ### End-to-End Testing
 

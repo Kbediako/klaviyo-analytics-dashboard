@@ -65,6 +65,50 @@ export const handlers = [
     );
   }),
   
+  // Charts endpoint
+  rest.get(`${API_BASE_URL}/charts`, (_req, res, ctx) => {
+    return res(
+      ctx.status(200),
+      ctx.json(mockData.charts)
+    );
+  }),
+  
+  // Individual chart endpoints
+  rest.get(`${API_BASE_URL}/charts/revenue`, (_req, res, ctx) => {
+    return res(
+      ctx.status(200),
+      ctx.json(mockData.charts.revenueOverTime)
+    );
+  }),
+  
+  rest.get(`${API_BASE_URL}/charts/distribution`, (_req, res, ctx) => {
+    return res(
+      ctx.status(200),
+      ctx.json(mockData.charts.channelDistribution)
+    );
+  }),
+  
+  rest.get(`${API_BASE_URL}/charts/top-segments`, (_req, res, ctx) => {
+    return res(
+      ctx.status(200),
+      ctx.json(mockData.charts.topSegments)
+    );
+  }),
+  
+  rest.get(`${API_BASE_URL}/charts/top-flows`, (_req, res, ctx) => {
+    return res(
+      ctx.status(200),
+      ctx.json(mockData.charts.topFlows)
+    );
+  }),
+  
+  rest.get(`${API_BASE_URL}/charts/top-forms`, (_req, res, ctx) => {
+    return res(
+      ctx.status(200),
+      ctx.json(mockData.charts.topForms)
+    );
+  }),
+  
   // Health check endpoint
   rest.get(`${API_BASE_URL}/health`, (_req, res, ctx) => {
     return res(
