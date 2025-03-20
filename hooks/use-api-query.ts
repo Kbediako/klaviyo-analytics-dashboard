@@ -8,22 +8,22 @@ interface ApiQueryOptions<T> {
    * Initial data to use before the query is resolved
    */
   initialData?: T;
-  
+
   /**
    * Whether to enable the query
    */
   enabled?: boolean;
-  
+
   /**
    * Refetch interval in milliseconds
    */
   refetchInterval?: number;
-  
+
   /**
    * Callback to run when the query is successful
    */
   onSuccess?: (data: T) => void;
-  
+
   /**
    * Callback to run when the query fails
    */
@@ -38,27 +38,27 @@ interface ApiQueryResult<T> {
    * The data returned from the query
    */
   data: T | undefined;
-  
+
   /**
    * Whether the query is currently loading
    */
   isLoading: boolean;
-  
+
   /**
    * Whether the query is currently fetching (initial load or refetch)
    */
   isFetching: boolean;
-  
+
   /**
    * Whether the query has errored
    */
   isError: boolean;
-  
+
   /**
    * The error returned from the query
    */
   error: Error | null;
-  
+
   /**
    * Function to manually refetch the data
    */
@@ -67,7 +67,7 @@ interface ApiQueryResult<T> {
 
 /**
  * Custom hook for data fetching with loading and error states
- * 
+ *
  * @param queryFn Function that returns a promise with the data
  * @param options Query options
  * @returns Query result
@@ -81,30 +81,30 @@ export function useApiQuery<T>(
     enabled = true,
     refetchInterval,
     onSuccess,
-    onError,
+    onError
   } = options;
-  
+
   const [data, setData] = useState<T | undefined>(initialData);
   const [isLoading, setIsLoading] = useState<boolean>(enabled);
   const [isFetching, setIsFetching] = useState<boolean>(enabled);
   const [isError, setIsError] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
-  
+
   const fetchData = useCallback(async (): Promise<T> => {
     setIsFetching(true);
     setIsError(false);
     setError(null);
-    
+
     try {
       const result = await queryFn();
       setData(result);
       setIsLoading(false);
       setIsFetching(false);
-      
+
       if (onSuccess) {
         onSuccess(result);
       }
-      
+
       return result;
     } catch (err) {
       const errorObj = err instanceof Error ? err : new Error(String(err));
@@ -112,15 +112,15 @@ export function useApiQuery<T>(
       setError(errorObj);
       setIsLoading(false);
       setIsFetching(false);
-      
+
       if (onError) {
         onError(errorObj);
       }
-      
+
       throw errorObj;
     }
   }, [queryFn, onSuccess, onError]);
-  
+
   // Initial fetch
   useEffect(() => {
     if (!enabled) {
@@ -128,34 +128,34 @@ export function useApiQuery<T>(
       setIsFetching(false);
       return;
     }
-    
+
     fetchData().catch(() => {
       // Error is already handled in fetchData
     });
   }, [enabled, fetchData]);
-  
+
   // Set up refetch interval
   useEffect(() => {
     if (!enabled || !refetchInterval) {
       return;
     }
-    
+
     const intervalId = setInterval(() => {
       fetchData().catch(() => {
         // Error is already handled in fetchData
       });
     }, refetchInterval);
-    
+
     return () => clearInterval(intervalId);
   }, [enabled, refetchInterval, fetchData]);
-  
+
   return {
     data,
     isLoading,
     isFetching,
     isError,
     error,
-    refetch: fetchData,
+    refetch: fetchData
   };
 }
 
@@ -167,7 +167,7 @@ interface MutationOptions<TData, TVariables> {
    * Callback to run when the mutation is successful
    */
   onSuccess?: (data: TData, variables: TVariables) => void;
-  
+
   /**
    * Callback to run when the mutation fails
    */
@@ -182,32 +182,32 @@ interface MutationResult<TData> {
    * The data returned from the mutation
    */
   data: TData | undefined;
-  
+
   /**
    * Whether the mutation is currently loading
    */
   isLoading: boolean;
-  
+
   /**
    * Whether the mutation has errored
    */
   isError: boolean;
-  
+
   /**
    * The error returned from the mutation
    */
   error: Error | null;
-  
+
   /**
    * Whether the mutation has been called
    */
   isIdle: boolean;
-  
+
   /**
    * Whether the mutation has succeeded
    */
   isSuccess: boolean;
-  
+
   /**
    * Reset the mutation state
    */
@@ -221,7 +221,7 @@ type MutationFn<TData, TVariables> = (variables: TVariables) => Promise<TData>;
 
 /**
  * Custom hook for data mutations
- * 
+ *
  * @param mutationFn Function that returns a promise with the data
  * @param options Mutation options
  * @returns Mutation result and mutation function
@@ -234,14 +234,14 @@ export function useApiMutation<TData, TVariables = unknown>(
   MutationResult<TData>
 ] {
   const { onSuccess, onError } = options;
-  
+
   const [data, setData] = useState<TData | undefined>(undefined);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isError, setIsError] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
   const [isIdle, setIsIdle] = useState<boolean>(true);
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
-  
+
   const reset = useCallback(() => {
     setData(undefined);
     setIsLoading(false);
@@ -250,7 +250,7 @@ export function useApiMutation<TData, TVariables = unknown>(
     setIsIdle(true);
     setIsSuccess(false);
   }, []);
-  
+
   const mutate = useCallback(
     async (variables: TVariables): Promise<TData> => {
       setIsLoading(true);
@@ -258,34 +258,34 @@ export function useApiMutation<TData, TVariables = unknown>(
       setIsError(false);
       setError(null);
       setIsSuccess(false);
-      
+
       try {
         const result = await mutationFn(variables);
         setData(result);
         setIsLoading(false);
         setIsSuccess(true);
-        
+
         if (onSuccess) {
           onSuccess(result, variables);
         }
-        
+
         return result;
       } catch (err) {
         const errorObj = err instanceof Error ? err : new Error(String(err));
         setIsError(true);
         setError(errorObj);
         setIsLoading(false);
-        
+
         if (onError) {
           onError(errorObj, variables);
         }
-        
+
         throw errorObj;
       }
     },
     [mutationFn, onSuccess, onError]
   );
-  
+
   return [
     mutate,
     {
@@ -295,7 +295,7 @@ export function useApiMutation<TData, TVariables = unknown>(
       error,
       isIdle,
       isSuccess,
-      reset,
-    },
+      reset
+    }
   ];
 }
