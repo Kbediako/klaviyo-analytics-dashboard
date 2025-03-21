@@ -10,7 +10,7 @@ This document outlines common issues encountered when integrating with the Klavi
 When accessing certain endpoints (flows, forms, segments), the API returned 405 (Method Not Allowed) errors, indicating that the HTTP method or endpoint structure was incorrect.
 
 ### Solution
-1. Updated endpoint paths to match Klaviyo API v2023-07-15 requirements:
+1. Updated endpoint paths to match Klaviyo API v2025-01-15 requirements:
    - Changed base URL from 'https://a.klaviyo.com/api' to 'https://a.klaviyo.com'
    - Added 'api/' prefix to all endpoint paths (e.g., 'api/campaigns' instead of 'campaigns')
    - Updated headers with proper case sensitivity ('revision' instead of 'Revision')
@@ -48,7 +48,7 @@ The API client wasn't being configured with the correct API key, or the key didn
 3. Configured specific metric IDs for important metrics:
    - Shopify Placed Order Metric ID: `WRfUa5` (used for revenue calculations)
 4. Hard-coded important metric IDs in the respective service implementations
-5. Verified that the correct API version is being used in headers (`2023-07-15`)
+5. Verified that the correct API version is being used in headers (`2025-01-15`)
 
 ## Issue 4: Understanding the Timeframe Data Requirements
 

@@ -9,7 +9,7 @@ This document details the integration between our analytics dashboard and the Kl
 ### API Version and Endpoints
 ```typescript
 const API_CONFIG = {
-  version: '2023-07-15',
+  version: '2025-01-15',
   baseUrl: 'https://a.klaviyo.com/api',
   endpoints: {
     metrics: '/metrics',

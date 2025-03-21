@@ -16,7 +16,7 @@ This document outlines the implementation of live Klaviyo API integration for th
    - `getSegments()` - Retrieves segment information
    - `getEvents()` - Retrieves event data with date filtering
 
-2. Fixed API endpoint structure to match Klaviyo v2023-07-15 requirements:
+2. Fixed API endpoint structure to match Klaviyo v2025-01-15 requirements:
    - Updated base URL from 'https://a.klaviyo.com/api' to 'https://a.klaviyo.com'
    - Added 'api/' prefix to all endpoint paths (e.g., 'api/campaigns' instead of 'campaigns')
    - Updated header 'Revision' to lowercase 'revision' and added Content-Type header
@@ -80,7 +80,7 @@ This document outlines the implementation of live Klaviyo API integration for th
 
 ## Recent Fixes
 1. Fixed 405 (Method Not Allowed) errors for flows, forms, and segments endpoints
-   - Updated endpoint paths with 'api/' prefix to match Klaviyo API v2023-07-15 requirements
+   - Updated endpoint paths with 'api/' prefix to match Klaviyo API v2025-01-15 requirements
    - Fixed headers and URL structure
    - Improved error reporting and logging
 

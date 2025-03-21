@@ -18,7 +18,7 @@ This phase focuses on updating our API client to align with Klaviyo's latest API
 export class KlaviyoApiClient {
   private apiKey: string;
   private baseUrl: string = 'https://a.klaviyo.com';
-  private apiVersion: string = '2023-10-15'; // Update to latest version
+  private apiVersion: string = '2025-01-15'; // Latest version as of 2025
   private maxRetries: number = 5;
   private retryDelay: number = 2000;
   private requestQueue: Map<string, Promise<any>> = new Map();
@@ -26,7 +26,7 @@ export class KlaviyoApiClient {
 
   constructor(
     apiKey: string,
-    apiVersion: string = '2023-10-15',
+    apiVersion: string = '2025-01-15',
     maxRetries: number = 5,
     retryDelay: number = 2000
   ) {

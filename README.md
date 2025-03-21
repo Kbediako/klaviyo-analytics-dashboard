@@ -171,7 +171,12 @@ If you see "Failed to fetch" errors in the frontend:
 
 We've recently fixed several issues with the Klaviyo API integration:
 
-1. **Fixed 405 Method Not Allowed errors**:
+1. **Updated to latest API version**:
+   - API client updated to use latest Klaviyo API version (2025-01-15)
+   - Properly configured to get version from environment variables with fallback
+   - Added API version validation on client initialization
+
+2. **Fixed 405 Method Not Allowed errors**:
    - Updated endpoint paths to include 'api/' prefix (e.g., 'api/campaigns')
    - Fixed base URL structure from 'https://a.klaviyo.com/api' to 'https://a.klaviyo.com'
    - Updated header case sensitivity ('revision' vs 'Revision')

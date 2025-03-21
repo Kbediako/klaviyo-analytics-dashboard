@@ -144,7 +144,7 @@ See [Architecture Documentation](./architecture/README.md) for detailed informat
 ```bash
 # Klaviyo API Configuration
 KLAVIYO_API_KEY=your_api_key
-KLAVIYO_API_VERSION=2023-07-15
+KLAVIYO_API_VERSION=2025-01-15
 
 # Backend Configuration
 PORT=3001
