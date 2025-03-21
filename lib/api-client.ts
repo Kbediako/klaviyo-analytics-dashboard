@@ -66,7 +66,8 @@ interface FetchOptions extends RequestInit {
 export async function fetchFromAPI<T>(
   endpoint: string, 
   options: FetchOptions = {}, 
-  skipCache: boolean = false
+  skipCache: boolean = false,
+  forceFresh: boolean = false
 ): Promise<T> {
   const queryParams = new URLSearchParams();
   if (options.params) {
@@ -75,6 +76,11 @@ export async function fetchFromAPI<T>(
         queryParams.append(key, value);
       }
     });
+  }
+  
+  // Add timestamp for cache busting if forceFresh is true
+  if (forceFresh) {
+    queryParams.append('_t', Date.now().toString());
   }
   const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
   const url = `${API_BASE_URL}${endpoint}${queryString}`;
@@ -333,8 +339,13 @@ export interface Segment {
  * @param params Query parameters
  * @returns Overview metrics data
  */
-export async function getOverviewMetrics(params: DateRangeParam = {}): Promise<OverviewMetrics> {
-  return fetchFromAPI<OverviewMetrics>('/overview', { params });
+interface FetchParams extends DateRangeParam {
+  forceFresh?: boolean;
+}
+
+export async function getOverviewMetrics(params: FetchParams = {}): Promise<OverviewMetrics> {
+  const { forceFresh, ...restParams } = params;
+  return fetchFromAPI<OverviewMetrics>('/overview', { params: restParams }, false, forceFresh);
 }
 
 /**
@@ -343,8 +354,9 @@ export async function getOverviewMetrics(params: DateRangeParam = {}): Promise<O
  * @param params Query parameters
  * @returns Campaigns data
  */
-export async function getCampaigns(params: DateRangeParam = {}): Promise<Campaign[]> {
-  return fetchFromAPI<Campaign[]>('/campaigns', { params });
+export async function getCampaigns(params: FetchParams = {}): Promise<Campaign[]> {
+  const { forceFresh, ...restParams } = params;
+  return fetchFromAPI<Campaign[]>('/campaigns', { params: restParams }, false, forceFresh);
 }
 
 /**
@@ -353,8 +365,9 @@ export async function getCampaigns(params: DateRangeParam = {}): Promise<Campaig
  * @param params Query parameters
  * @returns Flows data
  */
-export async function getFlows(params: DateRangeParam = {}): Promise<Flow[]> {
-  return fetchFromAPI<Flow[]>('/flows', { params });
+export async function getFlows(params: FetchParams = {}): Promise<Flow[]> {
+  const { forceFresh, ...restParams } = params;
+  return fetchFromAPI<Flow[]>('/flows', { params: restParams }, false, forceFresh);
 }
 
 /**
@@ -363,8 +376,9 @@ export async function getFlows(params: DateRangeParam = {}): Promise<Flow[]> {
  * @param params Query parameters
  * @returns Forms data
  */
-export async function getForms(params: DateRangeParam = {}): Promise<Form[]> {
-  return fetchFromAPI<Form[]>('/forms', { params });
+export async function getForms(params: FetchParams = {}): Promise<Form[]> {
+  const { forceFresh, ...restParams } = params;
+  return fetchFromAPI<Form[]>('/forms', { params: restParams }, false, forceFresh);
 }
 
 /**
@@ -373,8 +387,23 @@ export async function getForms(params: DateRangeParam = {}): Promise<Form[]> {
  * @param params Query parameters
  * @returns Segments data
  */
-export async function getSegments(params: DateRangeParam = {}): Promise<Segment[]> {
-  return fetchFromAPI<Segment[]>('/segments', { params });
+export async function getSegments(params: FetchParams = {}): Promise<Segment[]> {
+  const { forceFresh, ...restParams } = params;
+  return fetchFromAPI<Segment[]>('/segments', { params: restParams }, false, forceFresh);
+}
+
+/**
+ * Force refresh all data by clearing cache and dispatching refresh event
+ */
+export function forceRefreshData(): void {
+  // Clear all cache
+  clearCache();
+  
+  // Dispatch custom event for components to refresh their data
+  if (typeof window !== 'undefined') {
+    const refreshEvent = new CustomEvent('forceDataRefresh');
+    window.dispatchEvent(refreshEvent);
+  }
 }
 
 /**

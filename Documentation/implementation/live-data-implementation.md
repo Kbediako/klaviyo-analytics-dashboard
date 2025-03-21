@@ -3,6 +3,28 @@
 ## Overview
 This document outlines the implementation plan for fixing live data issues and enhancing the Analytics Dashboard's real-time capabilities.
 
+## Recent Updates
+
+### Cache Busting Implementation (March 21, 2025)
+1. Enhanced API client with cache busting functionality:
+   - Added forceFresh parameter to fetchFromAPI function
+   - Implemented timestamp-based cache busting via _t query parameter
+   - Updated all API endpoint functions to support forceFresh parameter
+   - Added forceRefreshData utility for global cache refresh
+
+2. API Endpoint Updates:
+   - Modified getOverviewMetrics to support forceFresh
+   - Modified getCampaigns to support forceFresh
+   - Modified getFlows to support forceFresh
+   - Modified getForms to support forceFresh
+   - Modified getSegments to support forceFresh
+
+3. Cache Management Improvements:
+   - Added client-side cache busting mechanism
+   - Implemented custom event dispatch for UI updates
+   - Enhanced cache invalidation strategies
+   - Added support for selective endpoint refresh
+
 ## Implementation Plan
 
 ### 1. Cache Management
