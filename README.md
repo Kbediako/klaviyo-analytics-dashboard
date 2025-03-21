@@ -311,6 +311,21 @@ npm test
 npm test
 ```
 
+### Browser Action Testing
+
+The project includes documentation and tools for testing the UI with browser actions:
+
+1. **Browser Action Best Practices**: See [Browser Action Testing Best Practices](Documentation/testing/browser-action-testing.md) for guidelines on testing the UI, especially regarding scrolling to see tab content.
+
+2. **Demo Script**: A demonstration script is available at `scripts/browser-action-demo.js` that shows how to properly test the UI with scrolling:
+   ```bash
+   # Install puppeteer if not already installed
+   npm install puppeteer
+   
+   # Run the demo script
+   node scripts/browser-action-demo.js
+   ```
+
 ### Testing Without Live API Calls
 
 The project includes several options for testing without making live API calls to Klaviyo:
