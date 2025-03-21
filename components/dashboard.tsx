@@ -8,13 +8,13 @@ import { FormsTable } from './forms-table';
 import { SegmentsTable } from './segments-table';
 import { RevenueChart } from './revenue-chart';
 import { ChannelDistributionChart } from './channel-distribution-chart';
-import { clearCache } from '../lib/api-client';
+import { forceRefreshData } from '../lib/api-client';
 import { 
   BarChartIcon, 
   SearchIcon, 
   FilterIcon, 
   DownloadIcon, 
-  BellIcon, 
+  RefreshCwIcon, 
   UserIcon,
   LineChartIcon,
   PieChartIcon
@@ -38,6 +38,17 @@ export function Dashboard() {
   const handleTabChange = (value: string) => {
     setActiveTab(value);
   };
+
+  // Listen for force refresh events
+  React.useEffect(() => {
+    const handleForceRefresh = () => {
+      // The tables will automatically refresh due to their hooks
+      console.log('Forcing data refresh...');
+    };
+
+    window.addEventListener('forceDataRefresh', handleForceRefresh);
+    return () => window.removeEventListener('forceDataRefresh', handleForceRefresh);
+  }, []);
   
   return (
     <div className="flex min-h-screen flex-col bg-muted/40">
@@ -74,13 +85,10 @@ export function Dashboard() {
           <Button 
             variant="outline" 
             className="rounded-lg flex items-center gap-2"
-            onClick={() => {
-              clearCache();
-              window.location.reload();
-            }}
+            onClick={() => forceRefreshData()}
           >
-            <BellIcon className="h-4 w-4" />
-            <span>Clear Cache</span>
+            <RefreshCwIcon className="h-4 w-4" />
+            <span>Refresh</span>
           </Button>
           
           <Avatar>

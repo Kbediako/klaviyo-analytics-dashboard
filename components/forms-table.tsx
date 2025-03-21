@@ -17,12 +17,8 @@ import { Progress } from './ui/progress';
  * 
  * @returns React component
  */
-interface FormsTableProps {
-  dateRange: string;
-}
-
-export function FormsTable({ dateRange }: FormsTableProps) {
-  const { data, isLoading, isError, error, refetch } = useForms({ dateRange });
+export function FormsTable() {
+  const { data, isLoading, isError, error, refetch } = useForms();
   
   // Show skeleton while loading
   if (isLoading) {
