@@ -1,143 +1,101 @@
-# Live Data Implementation Plan
+# Live Data Implementation
 
 ## Overview
+This document outlines the implementation plan for fixing live data issues and enhancing the Analytics Dashboard's real-time capabilities.
 
-This document outlines the implementation plan for fixing issues with live data not updating in the Klaviyo Analytics Dashboard UI. The plan is divided into five phases, each addressing specific aspects of the data flow and user experience.
+## Implementation Plan
 
-## Phase 1: Cache Busting & Refresh Mechanism
+### 1. Cache Management
+- Implement cache busting mechanism for manual refresh
+- Add cache headers for proper browser caching
+- Implement server-side caching with Redis
+- Add cache invalidation on data updates
 
-### 1.1 API Client Enhancement
-- Add cache busting functionality to `fetchFromAPI`
-- Add `forceFresh` parameter for explicit cache bypass
-- Implement `forceRefreshData` utility function
-- Update all API endpoint functions to support forced refresh
+### 2. Sync Service Enhancements
+- Implement incremental sync for better performance
+- Add retry mechanism with exponential backoff
+- Implement proper error handling and logging
+- Add sync status indicators
 
-### 1.2 Refresh Button
-- Add refresh button to dashboard header
-- Implement loading state and animation
-- Clear cache and trigger data refetch
-- Visual feedback for refresh action
+### 3. Error Handling Improvements
+- Add comprehensive error tracking
+- Implement fallback mechanisms
+- Add user-friendly error messages
+- Implement error reporting system
 
-## Phase 2: Data Synchronization
+### 4. Data Freshness Indicators
+- Add last updated timestamps
+- Implement real-time update indicators
+- Add loading states for data fetching
+- Implement stale data warnings
 
-### 2.1 Sync Service Enhancement
-- Add detailed logging to sync process
-- Improve error handling and status updates
-- Create sync status endpoint
-- Track sync progress and results
-
-### 2.2 Sync Status UI
-- Create SyncStatus component
-- Show sync status for all entities
-- Display last sync time and record counts
-- Auto-refresh status every 30 seconds
-
-## Phase 3: Error Handling
-
-### 3.1 API Client Error Handling
-- Implement global error state tracking
-- Create error event subscription system
-- Improve error classification and handling
-- Clear error state on successful requests
-- Re-throw critical errors instead of using fallback data
-
-### 3.2 Error Alert Component
-- Enhance ErrorAlert component
-- Subscribe to API error changes
-- Show detailed error messages
-- Make alerts dismissible
-- Add to main dashboard layout
-
-## Phase 4: Data Freshness Indicators
-
-### 4.1 Last Updated Timestamps
-- Track successful data fetch timestamps
-- Create LastUpdated component
-- Show relative time since last update
-- Auto-refresh timestamps
-- Add to all major dashboard sections
-
-### 4.2 Data Source Indicators
-- Track data source (live/cache/fallback)
-- Create DataSourceIndicator component
-- Add visual indicators for each source type
-- Include tooltips with explanations
-- Add alongside LastUpdated component
-
-## Phase 5: Monitoring and Diagnostics
-
-### 5.1 API Request Logging
-- Track detailed API request statistics
-- Monitor cache hits/misses
-- Track errors and pending requests
-- Create diagnostic endpoint
-- Collect system health information
-
-### 5.2 Diagnostics Panel
-- Create DiagnosticsPanel component
-- Show API client statistics
-- Display system diagnostics
-- Monitor sync status
-- Add database health information
-
-## Implementation Steps
-
-For each phase:
-
-1. Create a feature branch from main
-2. Write tests first (TDD approach)
-3. Implement the feature
-4. Test thoroughly
-5. Open PR for review
-6. Merge after approval
+### 5. Monitoring and Diagnostics
+- Add performance monitoring
+- Implement error tracking
+- Add usage analytics
+- Implement health checks
 
 ## Testing Strategy
 
 ### Unit Tests
-- Test cache busting functionality
-- Verify error handling
-- Test data source tracking
-- Validate timestamp tracking
+- Test cache management functions
+- Test sync service operations
+- Test error handling scenarios
+- Test data freshness calculations
 
 ### Integration Tests
-- Test sync process end-to-end
-- Verify error propagation
-- Test cache clearing
-- Validate diagnostic data collection
+- Test end-to-end sync operations
+- Test cache invalidation
+- Test error recovery scenarios
+- Test real-time updates
 
-### UI Tests
-- Test refresh button functionality
-- Verify error alert display
-- Test data source indicators
-- Validate diagnostics panel
+### Performance Tests
+- Test cache hit rates
+- Test sync performance
+- Test error handling performance
+- Test concurrent operations
 
 ## Rollout Plan
 
-1. Deploy backend changes first
-2. Roll out frontend changes gradually
-3. Monitor error rates and performance
-4. Gather user feedback
-5. Make adjustments as needed
+### Phase 1: Development
+- Implement core functionality
+- Add basic error handling
+- Implement simple caching
+- Add basic monitoring
+
+### Phase 2: Testing
+- Conduct unit tests
+- Run integration tests
+- Perform performance testing
+- Fix identified issues
+
+### Phase 3: Staging
+- Deploy to staging environment
+- Monitor performance
+- Gather feedback
+- Make necessary adjustments
+
+### Phase 4: Production
+- Gradual rollout to production
+- Monitor for issues
+- Gather user feedback
+- Make performance optimizations
 
 ## Success Metrics
+- Cache hit rate > 90%
+- Sync success rate > 99%
+- Error rate < 1%
+- Average response time < 200ms
+- User satisfaction > 90%
 
-- Reduced user reports of stale data
-- Improved error visibility and handling
-- Better sync success rates
-- Faster issue diagnosis
-- Improved user confidence in data freshness
+## Monitoring Plan
+- Set up error tracking
+- Implement performance monitoring
+- Add usage analytics
+- Configure alerting system
 
 ## Rollback Plan
-
-- Keep previous version tagged
-- Maintain backward compatibility
-- Document rollback procedures
-- Monitor key metrics after deployment
-
-## Future Enhancements
-
-- Real-time data updates using WebSocket
-- More detailed sync analytics
-- Enhanced error recovery
-- Automated diagnostic alerts
-- Performance optimization based on usage patterns
+- Define rollback triggers
+- Document rollback procedure
+- Test rollback process
+- Prepare communication plan
