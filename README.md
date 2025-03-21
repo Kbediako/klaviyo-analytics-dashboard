@@ -49,6 +49,7 @@ klaviyo-analytics-dashboard/
 ### Backend
 - **Framework**: Node.js with Express
 - **Language**: TypeScript
+- **Database**: PostgreSQL with TimescaleDB for time-series optimization
 - **Testing**: Jest and Supertest
 - **API Integration**: Klaviyo REST API
 
@@ -58,6 +59,7 @@ klaviyo-analytics-dashboard/
 
 - Node.js (v16 or higher)
 - npm or yarn
+- PostgreSQL with TimescaleDB extension (or Docker for containerized setup)
 - Klaviyo API key
 
 ### Backend Setup
@@ -167,9 +169,41 @@ If you see "Failed to fetch" errors in the frontend:
 4. Check browser console for specific error messages
 5. If using a custom API URL, ensure NEXT_PUBLIC_API_URL is set correctly in your frontend environment
 
-### Recent API Integration Updates
+### Recent Updates
 
-We've recently fixed several issues with the Klaviyo API integration:
+#### Database Optimization (Phase 2)
+
+We've implemented comprehensive database optimizations as part of the Gap Remediation Plan:
+
+1. **Enhanced Indexing Strategy**:
+   - Multi-column indexes with INCLUDE for common query patterns
+   - BRIN indexes for efficient time-series data access
+   - GIN indexes for JSON property querying
+   - Partial indexes for frequent filter conditions
+
+2. **Optimized Connection Pooling**:
+   - Configurable pool size with environment variables
+   - Comprehensive retry logic with exponential backoff
+   - Connection metrics collection for monitoring
+   - Statement timeout handling to prevent runaway queries
+
+3. **Automated Backup and Recovery**:
+   - Scheduled hourly, daily, weekly, and monthly backups
+   - Backup integrity verification
+   - Point-in-time recovery capabilities
+   - Retention policies and rotation management
+
+4. **TimescaleDB Optimizations**:
+   - Optimized chunk size and compression policies
+   - Multi-dimensional partitioning for improved query performance
+   - Retention policies for automatic data lifecycle management
+   - Specialized configuration for analytics workloads
+
+See the [Database Optimization Guide](/Documentation/architecture/database-optimization.md) for technical details.
+
+#### API Integration Updates (Phase 1)
+
+We've fixed several issues with the Klaviyo API integration:
 
 1. **Updated to latest API version**:
    - API client updated to use latest Klaviyo API version (2025-01-15)
@@ -181,12 +215,12 @@ We've recently fixed several issues with the Klaviyo API integration:
    - Fixed base URL structure from 'https://a.klaviyo.com/api' to 'https://a.klaviyo.com'
    - Updated header case sensitivity ('revision' vs 'Revision')
 
-2. **Improved data transformation**:
+3. **Improved data transformation**:
    - Enhanced API response mapping to frontend models
    - Added deterministic metrics generation for consistent display
    - Implemented proper overview metrics calculation
 
-3. **Enhanced error handling**:
+4. **Enhanced error handling**:
    - Added comprehensive logging for API requests and responses
    - Improved validation and fallback behaviors
    - Added robust error handling in UI components
@@ -313,7 +347,21 @@ See the [Knowledge Transfer Documentation](Documentation/knowledge-transfer.md) 
 - **Issue**: Rate limiting errors (429 responses)
   - **Solution**: Review and adjust the exponential backoff strategy in klaviyoApiClient.ts.
 
-#### Performance Issues
+#### Database Performance Issues
+
+- **Issue**: Slow database queries
+  - **Solution**: Check the query execution plan with EXPLAIN ANALYZE to identify missing indexes or optimization opportunities.
+
+- **Issue**: Connection pool exhaustion
+  - **Solution**: Check pool metrics with `db.getPoolMetrics()` and adjust pool size with the DB_MAX_CONNECTIONS environment variable.
+
+- **Issue**: High database CPU usage
+  - **Solution**: Review the TimescaleDB chunk size and compression settings. Consider adjusting the work_mem setting.
+
+- **Issue**: Database backup failures
+  - **Solution**: Check backup logs in `/app/backups/backup.log` and verify disk space availability.
+
+#### API Performance Issues
 
 - **Issue**: Slow API responses
   - **Solution**: The application implements caching. Check that the cache is working properly.

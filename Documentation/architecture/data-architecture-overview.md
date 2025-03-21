@@ -27,9 +27,11 @@ graph TD
 
 ### 2. Storage Layer
 - PostgreSQL with TimescaleDB extension for time-series data
-- Efficient storage of historical metrics and events
-- Optimized for both real-time queries and batch analytics
-- Implements data retention policies
+- Efficient storage of historical metrics and events with optimized chunking and compression
+- Enhanced indexing strategy with BRIN, GIN, and partial indexes for performance
+- Comprehensive connection pooling with retry mechanisms
+- Automated backup and disaster recovery procedures
+- Implements data retention and compression policies
 
 ### 3. Processing Layer
 - Transforms raw data for frontend consumption
@@ -74,9 +76,12 @@ graph TD
 ## System Characteristics
 
 ### Performance
-- Optimized query patterns for common operations
-- Efficient caching strategies
-- Batch processing for heavy computations
+- Optimized query patterns with advanced multi-column and specialized indexes
+- Efficient connection pooling with metrics monitoring
+- Tiered caching strategies for different data access patterns
+- Batch processing for heavy computations with query timeouts
+- Statement timeout handling to prevent runaway queries
+- Optimized PostgreSQL and TimescaleDB configuration
 
 ### Scalability
 - Horizontal scaling capability
@@ -84,9 +89,12 @@ graph TD
 - Resource usage optimization
 
 ### Reliability
-- Multiple fallback mechanisms
-- Comprehensive error handling
-- Data consistency checks
+- Multiple fallback mechanisms with exponential backoff retry
+- Comprehensive error handling with error categorization
+- Automated database backup and disaster recovery
+- Connection pool monitoring and auto-recovery
+- Health checks and failure detection
+- Data consistency checks and constraints
 
 ### Security
 - Secure API key management

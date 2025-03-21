@@ -9,8 +9,68 @@ services:
       - POSTGRES_USER=klaviyo
       - POSTGRES_PASSWORD=klaviyo_pass
       - POSTGRES_DB=klaviyo_analytics
+      # Configure TimescaleDB for better performance
+      - TIMESCALEDB_TUNE_MAX_CONNECTIONS=200
+      - TIMESCALEDB_TUNE_MAX_BACKGROUND_WORKERS=8
+      - TIMESCALEDB_TUNE_MAX_PARALLEL_WORKERS_PER_GATHER=4
+      - TIMESCALEDB_TUNE_MAX_WORKER_PROCESSES=8
+      - TIMESCALEDB_TUNE_MEMORY=1GB
+      # Set statement timeout to prevent long-running queries
+      - POSTGRES_INITDB_ARGS=--data-checksums
     volumes:
       - timescaledb_data:/var/lib/postgresql/data
+      - ./db/migrations:/docker-entrypoint-initdb.d
+      - ./db/conf:/etc/postgresql/postgresql.conf.d:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U klaviyo -d klaviyo_analytics"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    command: >
+      -c shared_buffers=256MB
+      -c work_mem=16MB
+      -c maintenance_work_mem=128MB
+      -c effective_cache_size=1GB
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c checkpoint_completion_target=0.9
+      -c max_wal_size=1GB
+      -c max_connections=100
+      -c max_parallel_workers=8
+      -c max_worker_processes=8
+      -c max_parallel_workers_per_gather=4
+      -c jit=off
+  
+  # Backup service runs on a schedule to perform database backups
+  backup-service:
+    image: postgres:14
+    volumes:
+      - ./db/backup:/app/backup
+      - db_backups:/app/backups
+    environment:
+      - DB_HOST=timescaledb
+      - DB_PORT=5432
+      - DB_USER=klaviyo
+      - DB_PASSWORD=klaviyo_pass
+      - DB_NAME=klaviyo_analytics
+      - BACKUP_DIR=/app/backups
+      - BACKUP_RETENTION_DAYS=30
+      - MAX_HOURLY_BACKUPS=24
+      - MAX_DAILY_BACKUPS=7
+      - MAX_WEEKLY_BACKUPS=4
+      - MAX_MONTHLY_BACKUPS=12
+    command: >
+      bash -c "chmod +x /app/backup/backup.sh && 
+      echo '0 * * * * /app/backup/backup.sh >> /app/backups/backup.log 2>&1' > /var/spool/cron/crontabs/root &&
+      crond -f -d 8"
+    depends_on:
+      - timescaledb
+    restart: unless-stopped
 
 volumes:
   timescaledb_data:
+    driver: local
+  db_backups:
+    driver: local

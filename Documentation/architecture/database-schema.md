@@ -163,32 +163,58 @@ CREATE TABLE model_performance (
 
 ### Time-Series Optimization
 ```sql
--- Create TimescaleDB hypertables for time-series data
+-- Create TimescaleDB hypertables for time-series data with optimized settings
 SELECT create_hypertable('klaviyo_events', 'timestamp');
+SELECT add_dimension('klaviyo_events', 'metric_id', number_partitions => 4);
+SELECT set_chunk_time_interval('klaviyo_events', INTERVAL '7 days');
+SELECT add_compression_policy('klaviyo_events', INTERVAL '90 days');
+SELECT add_retention_policy('klaviyo_events', INTERVAL '2 years');
+
 SELECT create_hypertable('fact_revenue', 'date');
 SELECT create_hypertable('fact_engagement', 'date');
 SELECT create_hypertable('fact_conversions', 'date');
 ```
 
-### Performance Indexes
+### Enhanced Performance Indexes
 ```sql
--- Raw data access
+-- Raw data access with BRIN indexes for large tables
 CREATE INDEX idx_raw_api_responses_endpoint_timestamp ON raw_api_responses(endpoint, timestamp);
+CREATE INDEX idx_raw_api_responses_timestamp_brin ON raw_api_responses USING BRIN (timestamp) WITH (pages_per_range = 128);
 
--- Metric lookups
+-- Metric lookups with JSON capability
 CREATE INDEX idx_klaviyo_metrics_name ON klaviyo_metrics(name);
+CREATE INDEX idx_klaviyo_metrics_metadata_gin ON klaviyo_metrics USING GIN (metadata jsonb_path_ops);
 
--- Event analysis
-CREATE INDEX idx_klaviyo_events_metric_timestamp ON klaviyo_events(metric_id, timestamp);
+-- Event analysis with optimized multi-column indexes and INCLUDE
+CREATE INDEX idx_klaviyo_events_metric_timestamp ON klaviyo_events(metric_id, timestamp DESC) INCLUDE (value, properties);
+CREATE INDEX idx_klaviyo_events_profile_timestamp ON klaviyo_events(profile_id, timestamp DESC);
+CREATE INDEX idx_klaviyo_events_profile_metric_timestamp ON klaviyo_events(profile_id, metric_id, timestamp DESC);
+CREATE INDEX idx_klaviyo_events_timestamp_brin ON klaviyo_events USING BRIN (timestamp) WITH (pages_per_range = 128);
+CREATE INDEX idx_klaviyo_events_properties_gin ON klaviyo_events USING GIN (properties jsonb_path_ops);
 
--- Revenue analysis
+-- Partial indexes for high-value events
+CREATE INDEX idx_klaviyo_events_high_value ON klaviyo_events(value DESC, timestamp DESC) 
+WHERE value > 0;
+
+-- Campaign and flow analysis
+CREATE INDEX idx_klaviyo_campaigns_sent_at ON klaviyo_campaigns(sent_at DESC);
+CREATE INDEX idx_klaviyo_campaigns_status ON klaviyo_campaigns(status);
+CREATE INDEX idx_klaviyo_flows_status_updated ON klaviyo_flows(status, updated_at DESC);
+
+-- Revenue analysis with improved coverage
 CREATE INDEX idx_fact_revenue_channel_date ON fact_revenue(channel, date);
+CREATE INDEX idx_fact_revenue_date_revenue ON fact_revenue(date DESC, revenue DESC);
 
--- Engagement tracking
+-- Engagement tracking with partial indexing
 CREATE INDEX idx_fact_engagement_metric_date ON fact_engagement(metric_type, date);
+CREATE INDEX idx_fact_engagement_high_rate ON fact_engagement(rate DESC, date DESC) 
+WHERE rate > 5.0;
 
--- Model management
+-- Model management and forecasting
 CREATE INDEX idx_forecast_predictions_model_date ON forecast_predictions(model_id, date);
+CREATE INDEX idx_forecast_models_active_metric ON forecast_models(active, metric_name) 
+WHERE active = true;
+CREATE INDEX idx_model_performance_metric_value ON model_performance(metric, value DESC);
 ```
 
 ## Data Retention
