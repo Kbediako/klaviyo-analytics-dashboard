@@ -18,33 +18,47 @@ export async function getFlows(req: Request, res: Response) {
     const dateRangeStr = req.query.dateRange as string;
     const dateRange = parseDateRange(dateRangeStr);
     
-    // Try to get data from the database first
-    const flows = await flowRepository.findByDateRange(dateRange.startDate, dateRange.endDate);
+    // Check if database is disabled
+    const isDbDisabled = process.env.DISABLE_DB === 'true';
     
-    // If we have data in the database, return it
-    if (flows.length > 0) {
-      logger.info(`Retrieved ${flows.length} flows from database for date range ${dateRange.startDate.toISOString()} to ${dateRange.endDate.toISOString()}`);
-      
-      // Transform database flows to the format expected by the frontend
-      const transformedFlows = flows.map(flow => ({
-        id: flow.id,
-        name: flow.name,
-        recipients: flow.recipient_count || 0,
-        openRate: flow.recipient_count ? (flow.open_count || 0) / flow.recipient_count * 100 : 0,
-        clickRate: flow.open_count ? (flow.click_count || 0) / flow.open_count * 100 : 0,
-        conversionRate: flow.recipient_count ? (flow.conversion_count || 0) / flow.recipient_count * 100 : 0,
-        revenue: flow.revenue || 0
-      }));
-      
-      return res.status(200).json(transformedFlows);
+    if (!isDbDisabled) {
+      try {
+        // Try to get data from the database first
+        const startDate = new Date(dateRange.start);
+        const endDate = new Date(dateRange.end);
+        const flows = await flowRepository.findByDateRange(startDate, endDate);
+        
+        // If we have data in the database, return it
+        if (flows.length > 0) {
+          logger.info(`Retrieved ${flows.length} flows from database for date range ${dateRange.start} to ${dateRange.end}`);
+          
+          // Transform database flows to the format expected by the frontend
+          const transformedFlows = flows.map(flow => ({
+            id: flow.id,
+            name: flow.name,
+            recipients: flow.recipient_count || 0,
+            openRate: flow.recipient_count ? (flow.open_count || 0) / flow.recipient_count * 100 : 0,
+            clickRate: flow.open_count ? (flow.click_count || 0) / flow.open_count * 100 : 0,
+            conversionRate: flow.recipient_count ? (flow.conversion_count || 0) / flow.recipient_count * 100 : 0,
+            revenue: flow.revenue || 0
+          }));
+          
+          return res.status(200).json(transformedFlows);
+        }
+      } catch (dbError) {
+        logger.warn('Error accessing database, falling back to API:', dbError);
+        // Continue to API fallback
+      }
+    } else {
+      logger.info('Database is disabled, fetching flows directly from API');
     }
     
-    // If not found in database, fetch from API
-    logger.info(`No flows found in database for date range ${dateRange.startDate.toISOString()} to ${dateRange.endDate.toISOString()}, fetching from API`);
+    // If not found in database or database is disabled, fetch from API
+    logger.info(`Fetching flows from API for date range ${dateRange.start} to ${dateRange.end}`);
     const apiFlows = await getFlowsData(dateRange);
     
-    // Store the results in the database for future requests
-    if (apiFlows.length > 0) {
+    // Store the results in the database for future requests if database is enabled
+    if (!isDbDisabled && apiFlows.length > 0) {
       try {
         const dbFlows = apiFlows.map(flow => ({
           id: flow.id,
@@ -168,9 +182,11 @@ export async function getFlowPerformanceMetrics(req: Request, res: Response) {
     const dateRange = parseDateRange(dateRangeStr);
     
     // Get metrics from repository
+    const startDate = new Date(dateRange.start);
+    const endDate = new Date(dateRange.end);
     const metrics = await flowRepository.getPerformanceMetrics(
-      dateRange.startDate, 
-      dateRange.endDate
+      startDate, 
+      endDate
     );
     
     // Return metrics as JSON
