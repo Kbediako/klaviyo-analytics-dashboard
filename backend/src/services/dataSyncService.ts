@@ -5,6 +5,7 @@ import campaignRepository from '../repositories/campaignRepository';
 import { flowRepository } from '../repositories/flowRepository';
 import { formRepository } from '../repositories/formRepository';
 import { segmentRepository } from '../repositories/segmentRepository';
+import { DateRange } from '../utils/dateUtils';
 
 /**
  * Interface for sync options
@@ -72,9 +73,9 @@ export class DataSyncService {
         
         try {
           // Get metric aggregates for the last 90 days
-          const dateRange = { 
-            startDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), 
-            endDate: new Date() 
+          const dateRange: DateRange = { 
+            start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(), 
+            end: new Date().toISOString() 
           };
           
           const aggregates = await klaviyoApiClient.getMetricAggregates(metricId, dateRange);
@@ -147,7 +148,12 @@ export class DataSyncService {
       logger.info(`Fetching events from ${startDate.toISOString()} to ${endDate.toISOString()}`);
       
       // Fetch events from Klaviyo API
-      const eventsResponse = await klaviyoApiClient.getEvents({ startDate, endDate });
+      const dateRange: DateRange = {
+        start: startDate.toISOString(),
+        end: endDate.toISOString()
+      };
+      
+      const eventsResponse = await klaviyoApiClient.getEvents(dateRange);
       
       if (!eventsResponse || !eventsResponse.data || !Array.isArray(eventsResponse.data)) {
         logger.error('Invalid response from Klaviyo API for events');
@@ -251,8 +257,14 @@ export class DataSyncService {
         logger.info(`Using last sync timestamp for incremental profile sync: ${lastSyncTime.toISOString()}`);
       }
       
+      // Create date range for profiles
+      const dateRange: DateRange = {
+        start: lastSyncTime ? lastSyncTime.toISOString() : new Date(0).toISOString(),
+        end: new Date().toISOString()
+      };
+      
       // Fetch profiles from Klaviyo API
-      const profilesResponse = await klaviyoApiClient.getProfiles();
+      const profilesResponse = await klaviyoApiClient.getProfiles(dateRange);
       
       if (!profilesResponse || !profilesResponse.data || !Array.isArray(profilesResponse.data)) {
         logger.error('Invalid response from Klaviyo API for profiles');
@@ -444,8 +456,14 @@ export class DataSyncService {
     try {
       logger.info(`Starting campaigns sync${options.force ? ' (forced)' : ''}${options.since ? ` since ${options.since.toISOString()}` : ''}`);
       
+      // Create date range for campaigns
+      const dateRange: DateRange = {
+        start: options.since ? options.since.toISOString() : new Date(0).toISOString(),
+        end: new Date().toISOString()
+      };
+      
       // Get campaigns from Klaviyo API
-      const campaignsResponse = await klaviyoApiClient.getCampaigns();
+      const campaignsResponse = await klaviyoApiClient.getCampaigns(dateRange);
       
       if (!campaignsResponse || !campaignsResponse.data || !Array.isArray(campaignsResponse.data)) {
         return {
@@ -705,9 +723,9 @@ export class DataSyncService {
         
         try {
           // Get metric aggregates for this period (last 90 days as default)
-          const dateRange = { 
-            startDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), 
-            endDate: new Date() 
+          const dateRange: DateRange = { 
+            start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(), 
+            end: new Date().toISOString() 
           };
           
           const aggregates = await klaviyoApiClient.getMetricAggregates(metricId, dateRange);
@@ -812,154 +830,108 @@ export class DataSyncService {
    * 
    * @returns Sync result for form events
    */
-  private async syncFormEvents(): Promise<{
-    success: boolean;
-    count: number;
-    message: string;
-  }> {
-    try {
-      logger.info('Using form events as fallback for syncing');
-      const startTime = new Date();
-      
-      // Get form events from the last 90 days
-      const dateRange = { 
-        startDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), 
-        endDate: new Date() 
-      };
-      
-      const formEvents = await klaviyoApiClient.getEvents(dateRange, 'metric.id=submitted-form');
-      
-      if (!formEvents || !formEvents.data || !Array.isArray(formEvents.data)) {
-        // Track failed sync
-        await this.trackSyncTimestamp('forms', startTime, 'failed', 0, false, 'Invalid response from Klaviyo API - events');
-        
-        return {
-          success: false,
-          count: 0,
-          message: 'Invalid response from Klaviyo API for form events'
-        };
-      }
-      
-      logger.info(`Found ${formEvents.data.length} form submission events`);
-      
-      // Group events by form name/ID
-      const formEventsByName = new Map<string, any[]>();
-      
-      formEvents.data.forEach((event: any) => {
-        const formName = event.attributes?.properties?.form_name || 
-                        event.attributes?.properties?.form_id || 
-                        'Unknown Form';
-        
-        if (!formEventsByName.has(formName)) {
-          formEventsByName.set(formName, []);
-        }
-        
-        formEventsByName.get(formName)!.push(event);
-      });
-      
-      // Transform grouped events into form data
-      const dbForms: any[] = [];
-      
-      formEventsByName.forEach((events, formName) => {
-        const submissions = events.length;
-        const views = Math.round(submissions * 3.2);  // Estimate views as roughly 3.2x submissions
-        const conversions = Math.round(submissions * 0.35);  // Estimate conversions as 35% of submissions
-        
-        // Find the most recent event to use for created_date
-        const sortedEvents = [...events].sort((a, b) => {
-          const dateA = new Date(a.attributes?.datetime || 0);
-          const dateB = new Date(b.attributes?.datetime || 0);
-          return dateB.getTime() - dateA.getTime();
-        });
-        
-        const latestEvent = sortedEvents[0];
-        const createdDate = latestEvent?.attributes?.datetime ? 
-                          new Date(latestEvent.attributes.datetime) : 
-                          new Date();
-        
-        dbForms.push({
-          id: `form-${formName.replace(/\s+/g, '-').toLowerCase()}`,
-          name: formName,
-          status: 'active',
-          form_type: this.detectFormType(formName),
-          views,
-          submissions,
-          conversions,
-          created_date: createdDate,
-          metadata: {
-            event_count: events.length,
-            last_event: latestEvent?.attributes
-          }
-        });
-      });
-      
-      // Store forms in database
-      let createdForms: any[] = [];
-      if (dbForms.length > 0) {
-        createdForms = await formRepository.createBatch(dbForms);
-        logger.info(`Stored ${createdForms.length} forms in database from events`);
-      }
-      
-      // Track successful sync
-      await this.trackSyncTimestamp('forms', startTime, 'synced', createdForms.length, true);
-      
-      return {
-        success: true,
-        count: createdForms.length,
-        message: `Successfully synced ${createdForms.length} forms from events`
-      };
-    } catch (error) {
-      logger.error('Error in form events sync:', error);
-      
-      // Track failed sync
-      await this.trackSyncTimestamp(
-        'forms', 
-        new Date(), 
-        'failed', 
-        0, 
-        false, 
-        error instanceof Error ? error.message : 'Unknown error'
-      );
-      
-      throw error;
+  /**
+   * Detect form type based on form name
+   * @param formName Form name
+   * @returns Detected form type
+   */
+  private detectFormType(formName: string): string {
+    const name = formName.toLowerCase();
+    
+    if (name.includes('popup') || name.includes('pop-up') || name.includes('modal')) {
+      return 'popup';
+    } else if (name.includes('embed') || name.includes('inline')) {
+      return 'embedded';
+    } else if (name.includes('flyout') || name.includes('slide')) {
+      return 'flyout';
+    } else if (name.includes('exit') || name.includes('leaving')) {
+      return 'exit-intent';
+    } else if (name.includes('welcome') || name.includes('hello')) {
+      return 'welcome-mat';
+    } else if (name.includes('footer') || name.includes('bottom')) {
+      return 'footer';
+    } else if (name.includes('sidebar') || name.includes('side')) {
+      return 'sidebar';
+    } else {
+      return 'standard';
     }
   }
   
   /**
-   * Detect the form type based on the form name
-   * 
-   * @param name Form name
-   * @returns Detected form type
+   * Track sync timestamp in the database
+   * @param entityType Entity type being synced
+   * @param startTime Start time of the sync
+   * @param status Sync status
+   * @param count Number of entities synced
+   * @param success Whether the sync was successful
+   * @param errorMessage Optional error message
    */
-  private detectFormType(name: string): string {
-    const nameLower = name.toLowerCase();
-    
-    if (nameLower.includes('newsletter') || nameLower.includes('subscribe')) {
-      return 'newsletter';
+  private async trackSyncTimestamp(
+    entityType: string,
+    startTime: Date,
+    status: 'synced' | 'failed',
+    count: number,
+    success: boolean,
+    errorMessage?: string
+  ): Promise<void> {
+    try {
+      const endTime = new Date();
+      const durationMs = endTime.getTime() - startTime.getTime();
+      
+      await db.query(
+        `INSERT INTO sync_status (
+          entity_type, 
+          started_at, 
+          completed_at, 
+          duration_ms, 
+          status, 
+          entity_count, 
+          success, 
+          error_message
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [
+          entityType,
+          startTime,
+          endTime,
+          durationMs,
+          status,
+          count,
+          success,
+          errorMessage || null
+        ]
+      );
+      
+      logger.info(`Tracked sync status for ${entityType}: ${status}, ${count} entities, ${durationMs}ms`);
+    } catch (error) {
+      logger.error(`Error tracking sync status for ${entityType}:`, error);
     }
-    
-    if (nameLower.includes('contact')) {
-      return 'contact';
+  }
+  
+  /**
+   * Get the last sync timestamp for an entity type
+   * @param entityType Entity type
+   * @returns Last sync timestamp or null if not found
+   */
+  private async getLastSyncTimestamp(entityType: string): Promise<Date | null> {
+    try {
+      const result = await db.query(
+        `SELECT completed_at 
+         FROM sync_status 
+         WHERE entity_type = $1 AND success = true 
+         ORDER BY completed_at DESC 
+         LIMIT 1`,
+        [entityType]
+      );
+      
+      if (result.rows.length === 0) {
+        return null;
+      }
+      
+      return new Date(result.rows[0].completed_at);
+    } catch (error) {
+      logger.error(`Error getting last sync timestamp for ${entityType}:`, error);
+      return null;
     }
-    
-    if (nameLower.includes('discount') || nameLower.includes('promo')) {
-      return 'discount';
-    }
-    
-    if (nameLower.includes('popup')) {
-      return 'popup';
-    }
-    
-    if (nameLower.includes('register') || nameLower.includes('signup')) {
-      return 'registration';
-    }
-    
-    if (nameLower.includes('event')) {
-      return 'event';
-    }
-    
-    // Default form type
-    return 'general';
   }
   
   /**
@@ -1016,61 +988,18 @@ export class DataSyncService {
       const segments = segmentsResponse.data;
       logger.info(`Retrieved ${segments.length} segments from Klaviyo API`);
       
-      // Filter segments for incremental sync if we have a timestamp
-      let segmentsToProcess = segments;
-      if (incrementalSync && lastSyncTime) {
-        segmentsToProcess = segments.filter(segment => {
-          const attributes = segment.attributes || {};
-          const updatedAt = attributes.updated_at ? new Date(attributes.updated_at) : null;
-          
-          // Include if:
-          // 1. No updated_at (we can't tell if it's changed)
-          // 2. Updated since last sync
-          return !updatedAt || updatedAt > lastSyncTime!;
-        });
-        
-        logger.info(`Filtered to ${segmentsToProcess.length} segments updated since last sync`);
-      }
-      
-      // Get additional metrics data for segments
-      let metricsResponse: any = {};
-      try {
-        // For now, metrics can be a placeholder or mock data
-        // In a real implementation, we would fetch metrics for each segment
-        metricsResponse = {
-          conversion_rates: {},
-          revenues: {}
-        };
-      } catch (metricsError) {
-        logger.warn('Error fetching segment metrics:', metricsError);
-      }
-      
       // Prepare segments for database storage
-      const dbSegments = segmentsToProcess.map(segment => {
+      const dbSegments = segments.map((segment: any) => {
         const attributes = segment.attributes || {};
-        const id = segment.id;
-        
-        // Extract member count
-        const memberCount = attributes.profile_count || 0;
-        
-        // Generate reasonable mock data if metrics aren't available
-        // In a real implementation, these would come from the metrics API
-        const conversionRate = Math.max(5, Math.min(40, 10 + Math.floor(Math.random() * 30)));
-        const revenue = Math.round(memberCount * conversionRate * 0.8);
         
         return {
-          id,
-          name: attributes.name || `Segment ${id}`,
-          status: attributes.active ? 'active' : 'inactive',
-          member_count: memberCount,
-          active_count: Math.round(memberCount * 0.75), // Estimate active members
-          conversion_rate: conversionRate,
-          revenue,
+          id: segment.id,
+          name: attributes.name || 'Unnamed Segment',
+          profile_count: parseInt(attributes.profile_count || '0', 10),
           created_date: attributes.created ? new Date(attributes.created) : new Date(),
-          last_synced_at: new Date(),
+          updated_date: attributes.updated ? new Date(attributes.updated) : new Date(),
           metadata: {
-            original_data: attributes,
-            klaviyo_updated_at: attributes.updated_at
+            original_data: attributes
           }
         };
       });
@@ -1114,125 +1043,202 @@ export class DataSyncService {
   }
   
   /**
-   * Track last sync timestamp for incremental syncs
-   * @param entityType Entity type
-   * @param timestamp Timestamp
-   * @param status Status of the sync operation
-   * @param recordCount Number of records synced
-   * @param success Whether the sync was successful
-   * @param errorMessage Error message if the sync failed
-   */
-  async trackSyncTimestamp(
-    entityType: string, 
-    timestamp: Date = new Date(),
-    status: string = 'synced',
-    recordCount: number = 0,
-    success: boolean = true,
-    errorMessage?: string
-  ): Promise<void> {
-    try {
-      logger.info(`Tracking sync timestamp for ${entityType}: ${timestamp.toISOString()}`);
-      
-      // Update the sync status table
-      await db.query(
-        `UPDATE klaviyo_sync_status 
-         SET last_sync_time = $1, status = $2, record_count = $3, success = $4, error_message = $5
-         WHERE entity_type = $6`,
-        [timestamp, status, recordCount, success, errorMessage || null, entityType]
-      );
-      
-      logger.debug(`Updated sync status for ${entityType}`);
-    } catch (error) {
-      logger.error(`Error tracking sync timestamp for ${entityType}:`, error);
-      throw error;
-    }
-  }
-  
-  /**
-   * Get last sync timestamp for incremental syncs
-   * @param entityType Entity type
-   * @returns Last sync timestamp or null
-   */
-  async getLastSyncTimestamp(entityType: string): Promise<Date | null> {
-    try {
-      logger.info(`Getting last sync timestamp for ${entityType}`);
-      
-      // Query the sync status table
-      const result = await db.query(
-        `SELECT last_sync_time, status, success
-         FROM klaviyo_sync_status
-         WHERE entity_type = $1`,
-        [entityType]
-      );
-      
-      if (result.rows.length === 0) {
-        logger.warn(`No sync status found for ${entityType}`);
-        return null;
-      }
-      
-      const syncStatus = result.rows[0];
-      
-      // If the last sync was not successful, return null to force a full sync
-      if (!syncStatus.success || syncStatus.status === 'not_synced') {
-        logger.info(`Last sync for ${entityType} was not successful or not completed, returning null`);
-        return null;
-      }
-      
-      logger.debug(`Last sync timestamp for ${entityType}: ${syncStatus.last_sync_time.toISOString()}`);
-      return syncStatus.last_sync_time;
-    } catch (error) {
-      logger.error(`Error getting sync timestamp for ${entityType}:`, error);
-      return null;
-    }
-  }
-  
-  /**
-   * Get sync status information
-   * @returns Object with sync status for each entity type
+   * Get sync status for all entity types
+   * @returns Sync status for all entity types
    */
   async getSyncStatus(): Promise<{
-    [key: string]: {
-      lastSyncTime: Date | null;
+    [entityType: string]: {
+      lastSync: Date | null;
       status: string;
-      recordCount: number;
+      count: number;
       success: boolean;
-      errorMessage: string | null;
+      durationMs: number;
     }
   }> {
     try {
-      logger.info('Getting sync status for all entity types');
-      
-      // Query the sync status table for all entity types
       const result = await db.query(
-        `SELECT entity_type, last_sync_time, status, record_count, success, error_message
-         FROM klaviyo_sync_status`
+        `SELECT 
+          entity_type, 
+          completed_at, 
+          status, 
+          entity_count, 
+          success, 
+          duration_ms
+         FROM sync_status 
+         WHERE (entity_type, completed_at) IN (
+           SELECT entity_type, MAX(completed_at) 
+           FROM sync_status 
+           GROUP BY entity_type
+         )`
       );
       
-      // Transform the results into the desired format
-      const syncStatus: {
-        [key: string]: {
-          lastSyncTime: Date | null;
+      const statusMap: {
+        [entityType: string]: {
+          lastSync: Date | null;
           status: string;
-          recordCount: number;
+          count: number;
           success: boolean;
-          errorMessage: string | null;
+          durationMs: number;
         }
       } = {};
       
-      for (const row of result.rows) {
-        syncStatus[row.entity_type] = {
-          lastSyncTime: row.last_sync_time,
-          status: row.status,
-          recordCount: row.record_count,
-          success: row.success,
-          errorMessage: row.error_message
+      // Initialize with default values for all entity types
+      for (const entityType of ['campaigns', 'flows', 'forms', 'segments', 'metrics', 'events', 'profiles']) {
+        statusMap[entityType] = {
+          lastSync: null,
+          status: 'never',
+          count: 0,
+          success: false,
+          durationMs: 0
         };
       }
       
-      return syncStatus;
+      // Update with actual values from database
+      for (const row of result.rows) {
+        statusMap[row.entity_type] = {
+          lastSync: new Date(row.completed_at),
+          status: row.status,
+          count: parseInt(row.entity_count, 10),
+          success: row.success,
+          durationMs: parseInt(row.duration_ms, 10)
+        };
+      }
+      
+      return statusMap;
     } catch (error) {
       logger.error('Error getting sync status:', error);
       throw error;
+    }
+  }
+  
+  /**
+   * Sync form events from Klaviyo API to database
+   * Used as a fallback when no form metrics are found
+   * 
+   * @returns Sync result for form events
+   */
+  private async syncFormEvents(): Promise<{
+    success: boolean;
+    count: number;
+    message: string;
+  }> {
+    try {
+      logger.info('Using form events as fallback for syncing');
+      const startTime = new Date();
+      
+      // Get form events from the last 90 days
+      const dateRange: DateRange = { 
+        start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(), 
+        end: new Date().toISOString() 
+      };
+      
+      const formEvents = await klaviyoApiClient.getEvents(dateRange, [{
+        field: 'metric.id',
+        operator: 'equals',
+        value: 'submitted-form'
+      }]);
+      
+      if (!formEvents || !formEvents.data || !Array.isArray(formEvents.data)) {
+        // Track failed sync
+        await this.trackSyncTimestamp('forms', startTime, 'failed', 0, false, 'Invalid response from Klaviyo API - events');
+        
+        return {
+          success: false,
+          count: 0,
+          message: 'Invalid response from Klaviyo API for form events'
+        };
+      }
+      
+      // Group form events by form name/ID
+      const formsByName = new Map<string, any[]>();
+      
+      formEvents.data.forEach((event: any) => {
+        const properties = event.attributes?.properties || {};
+        const formName = properties.form_name || properties.form_id || 'Unknown Form';
+        
+        if (!formsByName.has(formName)) {
+          formsByName.set(formName, []);
+        }
+        
+        formsByName.get(formName)!.push(event);
+      });
+      
+      logger.info(`Grouped form events into ${formsByName.size} forms`);
+      
+      // Create form objects for database
+      const dbForms = Array.from(formsByName.entries()).map(([formName, events]) => {
+        // Generate a stable ID based on the form name
+        const formId = `form-event-${Buffer.from(formName).toString('base64').replace(/[+/=]/g, '')}`;
+        
+        // Count submissions
+        const submissions = events.length;
+        
+        // Estimate views (typically 3-5x submissions)
+        const views = Math.round(submissions * 4);
+        
+        // Estimate conversions (typically 30-40% of submissions)
+        const conversions = Math.round(submissions * 0.35);
+        
+        // Get the earliest event date as the form creation date
+        const dates = events.map((event: any) => new Date(event.attributes?.datetime || Date.now()));
+        const createdDate = new Date(Math.min(...dates.map(d => d.getTime())));
+        
+        return {
+          id: formId,
+          name: formName,
+          status: 'active',
+          form_type: this.detectFormType(formName),
+          views,
+          submissions,
+          conversions,
+          created_date: createdDate,
+          metadata: {
+            source: 'events',
+            event_count: events.length,
+            sample_event: events[0]?.attributes
+          }
+        };
+      });
+      
+      // Store forms in database
+      let createdForms: any[] = [];
+      if (dbForms.length > 0) {
+        createdForms = await formRepository.createBatch(dbForms);
+        logger.info(`Stored ${createdForms.length} forms from events in database`);
+      } else {
+        logger.warn('No form events to sync to database');
+      }
+      
+      // Track successful sync
+      await this.trackSyncTimestamp('forms', startTime, 'synced', createdForms.length, true);
+      
+      return {
+        success: true,
+        count: createdForms.length,
+        message: `Successfully synced ${createdForms.length} forms from events`
+      };
+    } catch (error) {
+      logger.error('Error in form events sync:', error);
+      
+      // Track failed sync
+      try {
+        await this.trackSyncTimestamp(
+          'forms', 
+          startTime, 
+          'failed', 
+          0, 
+          false, 
+          error instanceof Error ? error.message : 'Unknown error'
+        );
+      } catch (trackError) {
+        logger.error('Error tracking sync failure:', trackError);
+      }
+      
+      return {
+        success: false,
+        count: 0,
+        message: `Form events sync failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
     }
   }
 }
