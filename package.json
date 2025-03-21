@@ -9,7 +9,10 @@
     "lint": "next lint",
     "dev:backend": "cd backend && npm run dev",
     "dev:all": "concurrently \"npm run dev\" \"npm run dev:backend\"",
-    "dev:mock": "concurrently \"NEXT_PUBLIC_API_URL=http://localhost:3002/api next dev\" \"cd backend && npm run mock-server\""
+    "dev:mock": "concurrently \"NEXT_PUBLIC_API_URL=http://localhost:3002/api next dev\" \"cd backend && npm run mock-server\"",
+    "test:smoke": "node scripts/smoke-test.js",
+    "deploy:staging": "bash scripts/deploy-staging.sh",
+    "deploy:production": "bash scripts/deploy-production.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
