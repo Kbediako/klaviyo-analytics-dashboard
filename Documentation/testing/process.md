@@ -168,6 +168,7 @@ When testing the application using browser automation tools or browser actions:
    - The default browser window size (900x600) may not show all UI elements
    - Navigation tabs and important controls may be below the fold
    - Some interactive elements might only be visible after scrolling
+   - **IMPORTANT**: Always scroll after clicking on tabs to see tab content
 
 2. **Check for responsive behavior**:
    - Test at different viewport sizes
@@ -178,6 +179,7 @@ When testing the application using browser automation tools or browser actions:
    - Tabs may be positioned at different locations based on viewport size
    - Ensure all tabs are accessible and functional
    - Check that tab content loads correctly
+   - **IMPORTANT**: Scroll down after tab navigation to see the full content
 
 4. **Monitor console output**:
    - Watch for errors and warnings
@@ -190,6 +192,27 @@ When testing the application using browser automation tools or browser actions:
 2. Use explicit waits for content to load
 3. Verify both visible and non-visible (scrolled) content
 4. Test interactions with elements that require scrolling to access
+5. Follow the detailed guidelines in [Browser Action Testing Best Practices](./browser-action-testing.md)
+6. Use the demo script at `scripts/browser-action-demo.js` as a reference implementation
+
+### Demo Script
+
+A demonstration script is available at `scripts/browser-action-demo.js` that shows how to properly test the UI with scrolling:
+
+```bash
+# Install puppeteer if not already installed
+npm install puppeteer
+
+# Run the demo script
+node scripts/browser-action-demo.js
+```
+
+This script demonstrates:
+- Proper viewport configuration (900x600)
+- Launching the application
+- Scrolling to see content below the fold
+- Clicking on tabs and scrolling to see tab content
+- Taking screenshots at each step for verification
 
 ## Troubleshooting
 
