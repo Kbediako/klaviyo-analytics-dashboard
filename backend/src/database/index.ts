@@ -1,5 +1,5 @@
 import { Pool, PoolClient, QueryResult } from 'pg';
-import logger from '../utils/logger';
+import { logger } from '../utils/logger';
 
 /**
  * Retry configuration for database queries
