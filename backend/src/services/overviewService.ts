@@ -61,21 +61,23 @@ export async function getOverviewMetrics(dateRange: DateRange): Promise<Overview
       converted: ''
     };
     
-    console.log('Metrics from API:', JSON.stringify(metricsResponse && metricsResponse.data ? metricsResponse.data.slice(0, 3) : []).substring(0, 500) + '...');
+    // Type assertion to ensure TypeScript knows metricsResponse has a data property
+    const typedMetricsResponse = metricsResponse as { data?: any[] };
+    console.log('Metrics from API:', JSON.stringify(typedMetricsResponse.data ? typedMetricsResponse.data.slice(0, 3) : []).substring(0, 500) + '...');
     
     // Important: We need to map the metric IDs from the API response
-    if (metricsResponse && metricsResponse.data && metricsResponse.data.length > 0) {
-      console.log(`Found ${metricsResponse.data.length} metrics in Klaviyo account`);
+    if (typedMetricsResponse.data && typedMetricsResponse.data.length > 0) {
+      console.log(`Found ${typedMetricsResponse.data.length} metrics in Klaviyo account`);
       
       // Log all metrics for debugging
-      metricsResponse.data.forEach((metric: any) => {
+      typedMetricsResponse.data.forEach((metric: any) => {
         const id = metric.id;
         const name = metric.attributes?.name || 'Unknown';
         console.log(`Metric: ${name} (ID: ${id})`);
       });
       
       // Find the metric IDs we need based on names in the metrics API response
-      for (const metric of metricsResponse.data) {
+      for (const metric of typedMetricsResponse.data) {
         const name = (metric.attributes?.name || '').toLowerCase();
         const id = metric.id;
         
@@ -104,22 +106,24 @@ export async function getOverviewMetrics(dateRange: DateRange): Promise<Overview
     let previousConversionRate = 0;
     
     if (metricIds.revenue) {
-      const revenueResponse = await klaviyoApiClient.getMetricAggregates(metricIds.revenue, dateRange);
-      const previousRevenueResponse = await klaviyoApiClient.getMetricAggregates(metricIds.revenue, previousPeriod);
+      const revenueResponse = await klaviyoApiClient.getMetricAggregates(metricIds.revenue, dateRange) as { data?: any[] };
+      const previousRevenueResponse = await klaviyoApiClient.getMetricAggregates(metricIds.revenue, previousPeriod) as { data?: any[] };
       
       // Sum up revenue from data
-      if (revenueResponse && revenueResponse.data && revenueResponse.data.length > 0) {
-        currentRevenue = revenueResponse.data.reduce((sum, item) => sum + (parseFloat(item.attributes?.value) || 0), 0);
+      if (revenueResponse.data && revenueResponse.data.length > 0) {
+        currentRevenue = revenueResponse.data.reduce((sum: number, item: any) => sum + (parseFloat(item.attributes?.value) || 0), 0);
       }
       
-      if (previousRevenueResponse && previousRevenueResponse.data && previousRevenueResponse.data.length > 0) {
-        previousRevenue = previousRevenueResponse.data.reduce((sum, item) => sum + (parseFloat(item.attributes?.value) || 0), 0);
+      if (previousRevenueResponse.data && previousRevenueResponse.data.length > 0) {
+        previousRevenue = previousRevenueResponse.data.reduce((sum: number, item: any) => sum + (parseFloat(item.attributes?.value) || 0), 0);
       }
     }
     
     // Use real data if available, fallback to calculated metrics if not
-    const currentSubscribers = profilesResponse?.data?.length || 0;
-    const previousSubscribers = previousProfilesResponse?.data?.length || 0;
+    const typedProfilesResponse = profilesResponse as { data?: any[] };
+    const typedPreviousProfilesResponse = previousProfilesResponse as { data?: any[] };
+    const currentSubscribers = typedProfilesResponse.data?.length || 0;
+    const previousSubscribers = typedPreviousProfilesResponse.data?.length || 0;
     
     // Calculate rates based on available data
     const emailMetrics = await getEmailMetrics(dateRange);
@@ -207,7 +211,7 @@ async function getEmailMetrics(dateRange: DateRange): Promise<{
 }> {
   try {
     // Get metrics for email
-    const metricsResponse = await klaviyoApiClient.getMetrics();
+    const metricsResponse = await klaviyoApiClient.getMetrics() as { data?: any[] };
     
     // Extract the metrics we need
     let metricIds = {
@@ -217,7 +221,7 @@ async function getEmailMetrics(dateRange: DateRange): Promise<{
       converted: ''
     };
     
-    if (metricsResponse && metricsResponse.data && metricsResponse.data.length > 0) {
+    if (metricsResponse.data && metricsResponse.data.length > 0) {
       // Find the metric IDs we need
       for (const metric of metricsResponse.data) {
         const name = metric.attributes?.name?.toLowerCase() || '';
@@ -241,37 +245,37 @@ async function getEmailMetrics(dateRange: DateRange): Promise<{
     
     // Get delivered emails count
     if (metricIds.delivered) {
-      const deliveredResponse = await klaviyoApiClient.getMetricAggregates(metricIds.delivered, dateRange);
+      const deliveredResponse = await klaviyoApiClient.getMetricAggregates(metricIds.delivered, dateRange) as { data?: any[] };
       
-      if (deliveredResponse && deliveredResponse.data && deliveredResponse.data.length > 0) {
-        deliveredCount = deliveredResponse.data.reduce((sum, item) => sum + (parseInt(item.attributes?.value) || 0), 0);
+      if (deliveredResponse.data && deliveredResponse.data.length > 0) {
+        deliveredCount = deliveredResponse.data.reduce((sum: number, item: any) => sum + (parseInt(item.attributes?.value) || 0), 0);
       }
     }
     
     // Get opened emails count
     if (metricIds.opened) {
-      const openedResponse = await klaviyoApiClient.getMetricAggregates(metricIds.opened, dateRange);
+      const openedResponse = await klaviyoApiClient.getMetricAggregates(metricIds.opened, dateRange) as { data?: any[] };
       
-      if (openedResponse && openedResponse.data && openedResponse.data.length > 0) {
-        openedCount = openedResponse.data.reduce((sum, item) => sum + (parseInt(item.attributes?.value) || 0), 0);
+      if (openedResponse.data && openedResponse.data.length > 0) {
+        openedCount = openedResponse.data.reduce((sum: number, item: any) => sum + (parseInt(item.attributes?.value) || 0), 0);
       }
     }
     
     // Get clicked emails count
     if (metricIds.clicked) {
-      const clickedResponse = await klaviyoApiClient.getMetricAggregates(metricIds.clicked, dateRange);
+      const clickedResponse = await klaviyoApiClient.getMetricAggregates(metricIds.clicked, dateRange) as { data?: any[] };
       
-      if (clickedResponse && clickedResponse.data && clickedResponse.data.length > 0) {
-        clickedCount = clickedResponse.data.reduce((sum, item) => sum + (parseInt(item.attributes?.value) || 0), 0);
+      if (clickedResponse.data && clickedResponse.data.length > 0) {
+        clickedCount = clickedResponse.data.reduce((sum: number, item: any) => sum + (parseInt(item.attributes?.value) || 0), 0);
       }
     }
     
     // Get converted count
     if (metricIds.converted) {
-      const convertedResponse = await klaviyoApiClient.getMetricAggregates(metricIds.converted, dateRange);
+      const convertedResponse = await klaviyoApiClient.getMetricAggregates(metricIds.converted, dateRange) as { data?: any[] };
       
-      if (convertedResponse && convertedResponse.data && convertedResponse.data.length > 0) {
-        convertedCount = convertedResponse.data.reduce((sum, item) => sum + (parseInt(item.attributes?.value) || 0), 0);
+      if (convertedResponse.data && convertedResponse.data.length > 0) {
+        convertedCount = convertedResponse.data.reduce((sum: number, item: any) => sum + (parseInt(item.attributes?.value) || 0), 0);
       }
     }
     
@@ -319,9 +323,9 @@ async function getChannelDistribution(): Promise<{
     };
     
     // Get events with channel information
-    const eventsResponse = await klaviyoApiClient.getEvents(dateRange);
+    const eventsResponse = await klaviyoApiClient.getEvents(dateRange) as { data?: any[] };
     
-    if (eventsResponse && eventsResponse.data && eventsResponse.data.length > 0) {
+    if (eventsResponse.data && eventsResponse.data.length > 0) {
       // Count events by channel
       const channelCounts: Record<string, number> = {
         email: 0,

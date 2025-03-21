@@ -302,31 +302,38 @@ class MonitoringService {
         overallStatus = 'unhealthy';
       }
       
-      // Check Redis connection
-      try {
-        // Simple check - if we can set and get a value, Redis is working
-        const testKey = 'health:test';
-        const testValue = Date.now().toString();
-        await cacheService.set(testKey, testValue, 10);
-        const retrievedValue = await cacheService.get(testKey);
-        
-        const redisHealthy = retrievedValue === testValue;
+      // Check Redis connection (if not disabled)
+      if (process.env.DISABLE_REDIS === 'true') {
         checks.redis = {
-          status: redisHealthy ? 'pass' : 'warn',
-          message: redisHealthy ? 'Redis connection is healthy' : 'Redis connection is degraded',
+          status: 'pass',
+          message: 'Redis is disabled by configuration',
         };
-        
-        if (!redisHealthy && overallStatus === 'healthy') {
-          overallStatus = 'degraded';
-        }
-      } catch (error) {
-        checks.redis = {
-          status: 'warn',
-          message: error instanceof Error ? error.message : 'Unknown Redis error',
-        };
-        
-        if (overallStatus === 'healthy') {
-          overallStatus = 'degraded';
+      } else {
+        try {
+          // Simple check - if we can set and get a value, Redis is working
+          const testKey = 'health:test';
+          const testValue = Date.now().toString();
+          await cacheService.set(testKey, testValue, 10);
+          const retrievedValue = await cacheService.get(testKey);
+          
+          const redisHealthy = retrievedValue === testValue;
+          checks.redis = {
+            status: redisHealthy ? 'pass' : 'warn',
+            message: redisHealthy ? 'Redis connection is healthy' : 'Redis connection is degraded',
+          };
+          
+          if (!redisHealthy && overallStatus === 'healthy') {
+            overallStatus = 'degraded';
+          }
+        } catch (error) {
+          checks.redis = {
+            status: 'warn',
+            message: error instanceof Error ? error.message : 'Unknown Redis error',
+          };
+          
+          if (overallStatus === 'healthy') {
+            overallStatus = 'degraded';
+          }
         }
       }
       

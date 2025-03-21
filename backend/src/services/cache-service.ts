@@ -1,40 +1,73 @@
-import Redis from 'ioredis';
 import { logger } from '../utils/logger';
 
-// Initialize Redis client with fallback to in-memory cache if Redis is not available
-const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+// Check if Redis is disabled
+const DISABLE_REDIS = process.env.DISABLE_REDIS === 'true';
+
+// Only import Redis if it's not disabled
+let Redis: any;
+if (!DISABLE_REDIS) {
+  try {
+    Redis = require('ioredis');
+  } catch (error) {
+    logger.warn('Failed to import ioredis, using in-memory cache only');
+  }
+}
 
 class CacheService {
-  private redis: Redis | null = null;
+  private redis: any = null;
   private memoryCache: Map<string, { value: any; expires: number }> = new Map();
   private isRedisAvailable: boolean = false;
 
   constructor() {
-    this.initializeRedis();
+    if (DISABLE_REDIS) {
+      logger.info('Redis is disabled by environment variable. Using in-memory cache only.');
+      this.isRedisAvailable = false;
+    } else if (Redis) {
+      this.initializeRedis();
+    } else {
+      logger.info('Redis is not available. Using in-memory cache only.');
+      this.isRedisAvailable = false;
+    }
   }
 
   private async initializeRedis(): Promise<void> {
+    if (DISABLE_REDIS || !Redis) {
+      return;
+    }
+    
     try {
+      // Initialize Redis client with fallback to in-memory cache if Redis is not available
+      const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+      
       this.redis = new Redis(REDIS_URL, {
-        retryStrategy: (times: number): number => {
-          const delay = Math.min(times * 50, 2000);
-          return delay;
-        },
-        maxRetriesPerRequest: 3,
+        retryStrategy: () => null, // Disable retries
+        maxRetriesPerRequest: 0,
+        connectTimeout: 1000, // 1 second timeout
+        lazyConnect: true, // Don't connect immediately
       });
 
-      this.redis.on('error', (error: Error) => {
-        logger.error('Redis connection error:', error);
+      // Try to connect once
+      await this.redis.connect().catch(() => {
+        logger.warn('Redis connection failed, using in-memory cache only');
+        this.redis = null;
         this.isRedisAvailable = false;
       });
 
-      this.redis.on('connect', () => {
-        logger.info('Connected to Redis successfully');
-        this.isRedisAvailable = true;
-      });
+      if (this.redis) {
+        this.redis.on('error', (error: Error) => {
+          logger.error('Redis connection error:', error);
+          this.isRedisAvailable = false;
+        });
+
+        this.redis.on('connect', () => {
+          logger.info('Connected to Redis successfully');
+          this.isRedisAvailable = true;
+        });
+      }
     } catch (error) {
       logger.error('Failed to initialize Redis:', error);
       this.isRedisAvailable = false;
+      this.redis = null;
     }
   }
 
