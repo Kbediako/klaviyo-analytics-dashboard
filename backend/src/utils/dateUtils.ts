@@ -2,9 +2,62 @@
  * Utility functions for handling date ranges in the API
  */
 
+/**
+ * Interface for date range with ISO string dates
+ * 
+ * @remarks
+ * This interface represents a date range with start and end dates as ISO strings.
+ * It is used throughout the application for consistent date range handling.
+ * 
+ * @example
+ * ```typescript
+ * const lastWeek: DateRange = {
+ *   start: '2023-01-01T00:00:00Z',
+ *   end: '2023-01-07T23:59:59Z'
+ * };
+ * ```
+ */
 export interface DateRange {
+  /** Start date as ISO string */
   start: string;
+  /** End date as ISO string */
   end: string;
+}
+
+/**
+ * Type guard to check if a value is a valid DateRange
+ * 
+ * @param value Value to check
+ * @returns True if the value is a valid DateRange
+ */
+export function isDateRange(value: unknown): value is DateRange {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  
+  const candidate = value as Record<string, unknown>;
+  
+  return (
+    typeof candidate.start === 'string' &&
+    typeof candidate.end === 'string' &&
+    isValidISODateString(candidate.start) &&
+    isValidISODateString(candidate.end)
+  );
+}
+
+/**
+ * Check if a string is a valid ISO date string
+ * 
+ * @param dateStr String to check
+ * @returns True if the string is a valid ISO date string
+ */
+function isValidISODateString(dateStr: string): boolean {
+  try {
+    const date = new Date(dateStr);
+    return !isNaN(date.getTime()) && date.toISOString() !== 'Invalid Date';
+  } catch (e) {
+    return false;
+  }
 }
 
 /**

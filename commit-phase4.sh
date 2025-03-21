@@ -1,26 +1,34 @@
 #!/bin/bash
 
-# Commit script for Phase 4: Analytics Engine Development
+# Script to commit Phase 4: Data Freshness Indicators implementation
 
-echo "Committing Phase 4: Analytics Engine Development..."
+# Colors for output
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
 
-# Add all files
-git add backend/src/analytics/timeSeriesAnalyzer.ts
-git add backend/src/analytics/forecastService.ts
-git add backend/src/controllers/analyticsController.ts
-git add backend/src/routes/analyticsRoutes.ts
-git add backend/src/index.ts
-git add backend/src/analytics/__tests__/timeSeriesAnalyzer.test.ts
-git add backend/src/analytics/__tests__/forecastService.test.ts
-git add backend/src/controllers/__tests__/analyticsController.test.ts
+echo -e "${YELLOW}Adding Phase 4: Data Freshness Indicators implementation...${NC}"
 
-# Commit with message
-git commit -m "Phase 4: Implement Analytics Engine
+# Add the modified documentation file
+git add Documentation/implementation/live-data-implementation.md
 
-- Added time series analysis with trend extraction and decomposition
-- Created forecasting models with confidence intervals
-- Built analytics API endpoints for time-series data and forecasts
-- Implemented anomaly detection and correlation analysis
-- Added comprehensive test coverage"
+# Add the new component
+git add components/data-freshness-indicator.tsx
 
-echo "Commit completed successfully!"
+# Add modified components
+git add components/dashboard.tsx
+git add components/overview-section.tsx
+git add lib/api/client.ts
+
+# Commit with descriptive message
+git commit -m "feat: implement data freshness indicators
+
+- Add DataFreshnessIndicator component
+- Add timestamp tracking to API client
+- Integrate indicators into dashboard sections
+- Implement stale data warnings
+- Add loading states for data fetching
+- Update documentation"
+
+echo -e "${GREEN}Phase 4 implementation committed successfully!${NC}"

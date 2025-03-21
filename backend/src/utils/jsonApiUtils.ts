@@ -15,10 +15,77 @@ export interface FilterParam {
 }
 
 /**
+ * Type guard for FilterParam
+ * 
+ * @param value Value to check
+ * @returns True if the value is a FilterParam
+ */
+export function isFilterParam(value: unknown): value is FilterParam {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  
+  const candidate = value as Record<string, unknown>;
+  
+  // Check field
+  if (typeof candidate.field !== 'string') {
+    return false;
+  }
+  
+  // Check operator
+  if (typeof candidate.operator !== 'string') {
+    return false;
+  }
+  
+  const validOperators = [
+    'equals', 
+    'greater-than', 
+    'less-than', 
+    'greater-or-equal', 
+    'less-or-equal', 
+    'contains'
+  ];
+  
+  if (!validOperators.includes(candidate.operator)) {
+    return false;
+  }
+  
+  // Check value
+  const valueType = typeof candidate.value;
+  if (valueType !== 'string' && 
+      valueType !== 'number' && 
+      valueType !== 'boolean' && 
+      !(candidate.value instanceof Date)) {
+    return false;
+  }
+  
+  return true;
+}
+
+/**
  * Sparse fieldset specification for JSON:API requests
  */
 export interface SparseFieldset {
   [resourceType: string]: string[];
+}
+
+/**
+ * Type guard for SparseFieldset
+ * 
+ * @param value Value to check
+ * @returns True if the value is a SparseFieldset
+ */
+export function isSparseFieldset(value: unknown): value is SparseFieldset {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  
+  const candidate = value as Record<string, unknown>;
+  
+  // Check each key has a string array value
+  return Object.values(candidate).every(fieldList => 
+    Array.isArray(fieldList) && fieldList.every(field => typeof field === 'string')
+  );
 }
 
 /**
@@ -33,6 +100,77 @@ export interface JsonApiParams {
     cursor?: string;
     size?: number;
   };
+}
+
+/**
+ * Type guard for JsonApiParams
+ * 
+ * @param value Value to check
+ * @returns True if the value is a JsonApiParams object
+ */
+export function isJsonApiParams(value: unknown): value is JsonApiParams {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  
+  const candidate = value as Record<string, unknown>;
+  
+  // Check filter
+  if (candidate.filter !== undefined) {
+    if (Array.isArray(candidate.filter)) {
+      if (!candidate.filter.every(isFilterParam)) {
+        return false;
+      }
+    } else if (typeof candidate.filter !== 'string' && typeof candidate.filter !== 'object') {
+      return false;
+    }
+  }
+  
+  // Check sort
+  if (candidate.sort !== undefined) {
+    if (Array.isArray(candidate.sort)) {
+      if (!candidate.sort.every(item => typeof item === 'string')) {
+        return false;
+      }
+    } else if (typeof candidate.sort !== 'string') {
+      return false;
+    }
+  }
+  
+  // Check include
+  if (candidate.include !== undefined) {
+    if (Array.isArray(candidate.include)) {
+      if (!candidate.include.every(item => typeof item === 'string')) {
+        return false;
+      }
+    } else if (typeof candidate.include !== 'string') {
+      return false;
+    }
+  }
+  
+  // Check fields
+  if (candidate.fields !== undefined && !isSparseFieldset(candidate.fields)) {
+    return false;
+  }
+  
+  // Check page
+  if (candidate.page !== undefined) {
+    if (typeof candidate.page !== 'object' || candidate.page === null) {
+      return false;
+    }
+    
+    const page = candidate.page as Record<string, unknown>;
+    
+    if (page.cursor !== undefined && typeof page.cursor !== 'string') {
+      return false;
+    }
+    
+    if (page.size !== undefined && typeof page.size !== 'number') {
+      return false;
+    }
+  }
+  
+  return true;
 }
 
 /**

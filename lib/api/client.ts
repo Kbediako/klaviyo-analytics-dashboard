@@ -12,6 +12,7 @@ import {
   removePendingRequest,
   generateCacheKey 
 } from './cache';
+import { isObject } from './typeGuards';
 
 // Track last updated timestamps for each endpoint
 export const lastUpdatedTimestamps: Record<string, Date> = {};
@@ -62,12 +63,25 @@ export async function fetchFromAPI<T>(
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.message || response.statusText;
+        // Try to parse error data, but handle case where it's not valid JSON
+        let errorData: unknown = {};
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          // If JSON parsing fails, use empty object
+          console.warn(`Failed to parse error response as JSON: ${e}`);
+        }
+        
+        // Extract error message with type safety
+        let errorMessage = response.statusText;
+        if (isObject(errorData) && typeof errorData.message === 'string') {
+          errorMessage = errorData.message;
+        }
         
         // Handle rate limiting
         if (response.status === 429) {
-          const retryAfter = parseInt(response.headers.get('Retry-After') || '60', 10);
+          const retryAfterHeader = response.headers.get('Retry-After');
+          const retryAfter = retryAfterHeader ? parseInt(retryAfterHeader, 10) : 60;
           await handleRateLimit(retryAfter);
           
           // Use cached data if available
@@ -80,13 +94,20 @@ export async function fetchFromAPI<T>(
         throw createApiError(response.status, errorMessage);
       }
 
-      const data = await response.json() as T;
+      // Parse response with error handling
+      let data: unknown;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error(`Failed to parse JSON response: ${jsonError}`);
+        throw createApiError(500, `Invalid JSON response: ${jsonError instanceof Error ? jsonError.message : String(jsonError)}`);
+      }
       
       // Store in cache and update timestamp
-      setCacheEntry(cacheKey, data);
+      setCacheEntry(cacheKey, data as T);
       lastUpdatedTimestamps[endpoint] = new Date();
       
-      return data;
+      return data as T;
     } catch (error) {
       // Handle network errors
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
@@ -111,7 +132,7 @@ export async function fetchFromAPI<T>(
         }
         
         // If no cached data, try fallback data
-        return getFallbackData(endpoint);
+        return getFallbackData(endpoint) as T;
       }
 
       // For unknown errors, throw as ApiError

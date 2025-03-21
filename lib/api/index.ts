@@ -11,6 +11,9 @@ export * from './errors';
 // Re-export endpoint functions
 export * from './endpoints';
 
+// Re-export type guards
+export * from './typeGuards';
+
 // Export core functionality
 export { fetchFromAPI } from './client';
 export { clearCache } from './cache';

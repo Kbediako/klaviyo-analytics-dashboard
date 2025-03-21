@@ -1,27 +1,35 @@
 #!/bin/bash
 
-# Commit Phase 5: Frontend Integration
+# Script to commit Phase 5: Monitoring and Diagnostics implementation
 
-echo "Committing Phase 5: Frontend Integration..."
+# Colors for output
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
 
-# Stage and commit the time series hook
-git add hooks/use-time-series.ts
-git commit -m "Phase 5: Add time series hook for analytics data"
+echo -e "${GREEN}Committing Phase 5: Monitoring and Diagnostics implementation...${NC}"
 
-# Stage and commit the forecast hook
-git add hooks/use-forecast.ts
-git commit -m "Phase 5: Add forecast hook for predictive analytics"
+# Add files
+git add \
+  backend/src/services/monitoring-service.ts \
+  backend/src/middleware/monitoring-middleware.ts \
+  backend/src/controllers/monitoring-controller.ts \
+  backend/src/routes/monitoring-routes.ts \
+  backend/src/monitoring-server.js \
+  Documentation/implementation/monitoring-implementation.md \
+  Documentation/implementation/live-api-setup.md \
+  backend/.env.example
 
-# Stage and commit the enhanced revenue chart component
-git add components/enhanced-revenue-chart.tsx
-git commit -m "Phase 5: Add enhanced revenue chart with forecast visualization"
+# Commit
+git commit -m "feat: implement monitoring and diagnostics system
 
-# Stage and commit the test file
-git add components/__tests__/enhanced-revenue-chart.test.tsx
-git commit -m "Phase 5: Add tests for enhanced revenue chart component"
+- Add MonitoringService for tracking system metrics, API usage, and errors
+- Implement monitoring middleware for request tracking
+- Add error monitoring middleware for error capture
+- Create RESTful monitoring endpoints for health checks and metrics
+- Add simplified monitoring server for testing
+- Update documentation with monitoring implementation details
+- Add guide for live API testing setup"
 
-# Stage and commit the updated documentation
-git add Documentation/knowledge-transfer.md
-git commit -m "Phase 5: Update documentation with new hooks and components"
-
-echo "Phase 5 implementation committed successfully!"
+echo -e "${GREEN}Phase 5 committed successfully!${NC}"
