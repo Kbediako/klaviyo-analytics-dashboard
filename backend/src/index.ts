@@ -24,6 +24,7 @@ import flowsRoutes from './routes/flows';
 import formsRoutes from './routes/forms';
 import segmentsRoutes from './routes/segments';
 import analyticsRoutes from './routes/analyticsRoutes';
+import syncRoutes from './routes/sync';
 
 // Initialize Express app
 const app = express();
@@ -75,10 +76,15 @@ app.use('/api/overview', cacheMiddleware(CACHE_TTLS.overview), overviewRoutes);
 app.use('/api/campaigns/sync', campaignsRoutes);
 app.use('/api/campaigns', cacheMiddleware(CACHE_TTLS.campaigns), campaignsRoutes);
 
+// Special handling for flows routes to exclude sync endpoint from caching
+app.use('/api/flows/sync', flowsRoutes);
 app.use('/api/flows', cacheMiddleware(CACHE_TTLS.flows), flowsRoutes);
 app.use('/api/forms', cacheMiddleware(CACHE_TTLS.forms), formsRoutes);
 app.use('/api/segments', cacheMiddleware(CACHE_TTLS.segments), segmentsRoutes);
 app.use('/api/analytics', cacheMiddleware(CACHE_TTLS.analytics), analyticsRoutes);
+
+// Special handling for sync endpoints (no caching)
+app.use('/api/sync', syncRoutes);
 
 // Apply stricter rate limits to the health endpoint
 app.use('/api/health', strictRateLimiter);

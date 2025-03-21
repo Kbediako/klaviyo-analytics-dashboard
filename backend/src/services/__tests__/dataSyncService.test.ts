@@ -1,244 +1,267 @@
 import { DataSyncService } from '../dataSyncService';
-import { KlaviyoApiClient } from '../klaviyoApiClient';
-import { MetricRepository } from '../../repositories/metricRepository';
-import { ProfileRepository } from '../../repositories/profileRepository';
-import { EventRepository } from '../../repositories/eventRepository';
-import { logger } from '../../utils/logger';
+import { klaviyoApiClient } from '../klaviyoApiClient';
+import campaignRepository from '../../repositories/campaignRepository';
+import { flowRepository } from '../../repositories/flowRepository';
 
-// Mock dependencies
-jest.mock('../klaviyoApiClient');
-jest.mock('../../repositories/metricRepository');
-jest.mock('../../repositories/profileRepository');
-jest.mock('../../repositories/eventRepository');
-jest.mock('../../utils/logger');
+// Mock the dependencies
+jest.mock('../klaviyoApiClient', () => ({
+  klaviyoApiClient: {
+    getCampaigns: jest.fn(),
+    getFlows: jest.fn()
+  }
+}));
+
+jest.mock('../../repositories/campaignRepository', () => ({
+  __esModule: true,
+  default: {
+    createBatch: jest.fn()
+  }
+}));
+
+jest.mock('../../repositories/flowRepository', () => ({
+  flowRepository: {
+    createBatch: jest.fn()
+  }
+}));
 
 describe('DataSyncService', () => {
-  let service: DataSyncService;
-  let mockKlaviyoClient: jest.Mocked<KlaviyoApiClient>;
-  let mockMetricRepo: jest.Mocked<MetricRepository>;
-  let mockProfileRepo: jest.Mocked<ProfileRepository>;
-  let mockEventRepo: jest.Mocked<EventRepository>;
+  let dataSyncService: DataSyncService;
   
   beforeEach(() => {
-    // Clear all mocks
+    dataSyncService = new DataSyncService();
     jest.clearAllMocks();
-    
-    // Setup mocks
-    mockKlaviyoClient = new KlaviyoApiClient('') as jest.Mocked<KlaviyoApiClient>;
-    mockMetricRepo = new MetricRepository() as jest.Mocked<MetricRepository>;
-    mockProfileRepo = new ProfileRepository() as jest.Mocked<ProfileRepository>;
-    mockEventRepo = new EventRepository() as jest.Mocked<EventRepository>;
-    
-    // Create service instance
-    service = new DataSyncService();
-    
-    // Replace private properties with mocks
-    (service as any).klaviyoClient = mockKlaviyoClient;
-    (service as any).metricRepo = mockMetricRepo;
-    (service as any).profileRepo = mockProfileRepo;
-    (service as any).eventRepo = mockEventRepo;
   });
   
-  describe('syncMetrics', () => {
-    it('should sync metrics successfully', async () => {
+  describe('syncCampaigns', () => {
+    it('should successfully sync campaigns', async () => {
       // Mock API response
-      const mockResponse = {
+      const mockApiResponse = {
         data: [
           {
-            id: 'metric-1',
-            type: 'metric',
+            id: 'campaign-1',
             attributes: {
-              name: 'Test Metric',
-              created: '2025-01-01T00:00:00Z',
-              updated: '2025-01-02T00:00:00Z',
-              integration: {
-                id: 'int-1',
-                name: 'Test Integration',
-                category: 'email'
+              name: 'Test Campaign 1',
+              status: 'sent',
+              send_time: '2023-01-01T00:00:00Z',
+              metrics: {
+                sent_count: '1000',
+                open_count: '500',
+                click_count: '250',
+                conversion_count: '100',
+                revenue: '5000'
               }
+            }
+          },
+          {
+            id: 'campaign-2',
+            attributes: {
+              name: 'Test Campaign 2',
+              status: 'draft'
             }
           }
         ]
       };
       
-      mockKlaviyoClient.getMetrics.mockResolvedValue(mockResponse);
-      mockMetricRepo.createOrUpdate.mockResolvedValue({
-        id: 'metric-1',
-        name: 'Test Metric',
-        created_at: new Date('2025-01-01T00:00:00Z'),
-        updated_at: new Date('2025-01-02T00:00:00Z'),
-        integration_id: 'int-1',
-        integration_name: 'Test Integration',
-        integration_category: 'email',
-        metadata: {}
-      });
+      // Mock the repository response
+      const mockCreatedCampaigns = [
+        { id: 'campaign-1', name: 'Test Campaign 1' },
+        { id: 'campaign-2', name: 'Test Campaign 2' }
+      ];
+      
+      // Setup mocks
+      (klaviyoApiClient.getCampaigns as jest.Mock).mockResolvedValue(mockApiResponse);
+      (campaignRepository.createBatch as jest.Mock).mockResolvedValue(mockCreatedCampaigns);
       
       // Call the method
-      const result = await service.syncMetrics();
+      const result = await dataSyncService.syncCampaigns();
       
-      // Verify results
-      expect(result).toBe(1);
-      expect(mockKlaviyoClient.getMetrics).toHaveBeenCalledTimes(1);
-      expect(mockMetricRepo.createOrUpdate).toHaveBeenCalledTimes(1);
-      expect(mockMetricRepo.createOrUpdate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: 'metric-1',
-          name: 'Test Metric',
-          created_at: expect.any(Date),
-          integration_id: 'int-1',
-          integration_name: 'Test Integration',
-          integration_category: 'email'
-        })
-      );
+      // Verify API was called
+      expect(klaviyoApiClient.getCampaigns).toHaveBeenCalledTimes(1);
+      
+      // Verify repository was called with transformed data
+      expect(campaignRepository.createBatch).toHaveBeenCalledTimes(1);
+      const createBatchArg = (campaignRepository.createBatch as jest.Mock).mock.calls[0][0];
+      
+      // Verify the transformed data structure
+      expect(createBatchArg).toHaveLength(2);
+      expect(createBatchArg[0].id).toBe('campaign-1');
+      expect(createBatchArg[0].name).toBe('Test Campaign 1');
+      expect(createBatchArg[0].status).toBe('sent');
+      expect(createBatchArg[0].sent_count).toBe(1000);
+      expect(createBatchArg[0].revenue).toBe(5000);
+      
+      // Verify result
+      expect(result.success).toBe(true);
+      expect(result.count).toBe(2);
     });
     
-    it('should handle empty response', async () => {
-      // Mock API response with no data
-      mockKlaviyoClient.getMetrics.mockResolvedValue({ data: [] });
-      
-      // Call the method
-      const result = await service.syncMetrics();
-      
-      // Verify results
-      expect(result).toBe(0);
-      expect(mockKlaviyoClient.getMetrics).toHaveBeenCalledTimes(1);
-      expect(mockMetricRepo.createOrUpdate).not.toHaveBeenCalled();
-    });
-    
-    it('should handle API errors', async () => {
+    it('should handle API error response', async () => {
       // Mock API error
-      const error = new Error('API error');
-      mockKlaviyoClient.getMetrics.mockRejectedValue(error);
+      (klaviyoApiClient.getCampaigns as jest.Mock).mockResolvedValue(null);
       
-      // Call the method and expect it to throw
-      await expect(service.syncMetrics()).rejects.toThrow('API error');
+      // Call the method
+      const result = await dataSyncService.syncCampaigns();
       
-      // Verify error was logged
-      expect(logger.error).toHaveBeenCalledWith(
-        'Error syncing metrics:',
-        expect.any(Error)
-      );
+      // Verify API was called
+      expect(klaviyoApiClient.getCampaigns).toHaveBeenCalledTimes(1);
+      
+      // Verify repository was not called
+      expect(campaignRepository.createBatch).not.toHaveBeenCalled();
+      
+      // Verify result
+      expect(result.success).toBe(false);
+      expect(result.count).toBe(0);
     });
   });
   
-  describe('syncRecentEvents', () => {
-    it('should sync events successfully', async () => {
+  describe('syncFlows', () => {
+    it('should successfully sync flows', async () => {
       // Mock API response
-      const mockResponse = {
+      const mockApiResponse = {
         data: [
           {
-            id: 'event-1',
-            type: 'event',
+            id: 'flow-1',
             attributes: {
-              datetime: '2025-01-01T00:00:00Z',
-              timestamp: 1735689600,
-              value: 10.99,
-              properties: { source: 'test' }
-            },
-            relationships: {
-              metric: {
-                data: {
-                  id: 'metric-1',
-                  type: 'metric'
-                }
-              },
-              profile: {
-                data: {
-                  id: 'profile-1',
-                  type: 'profile'
-                }
+              name: 'Welcome Flow',
+              status: 'active',
+              trigger_type: 'list',
+              created_at: '2023-01-01T00:00:00Z',
+              metrics: {
+                recipient_count: '1000',
+                open_count: '800',
+                click_count: '400',
+                conversion_count: '200',
+                revenue: '5000'
               }
             }
-          }
-        ],
-        included: [
+          },
           {
-            id: 'profile-1',
-            type: 'profile',
+            id: 'flow-2',
             attributes: {
-              email: 'test@example.com',
-              first_name: 'Test',
-              last_name: 'User',
-              created: '2024-12-01T00:00:00Z',
-              properties: {}
+              name: 'Abandoned Cart Flow',
+              status: 'active',
+              trigger_type: 'event'
             }
           }
         ]
       };
       
-      mockKlaviyoClient.getEvents.mockResolvedValue(mockResponse);
-      mockProfileRepo.createOrUpdate.mockResolvedValue({
-        id: 'profile-1',
-        email: 'test@example.com',
-        first_name: 'Test',
-        last_name: 'User',
-        created_at: new Date('2024-12-01T00:00:00Z'),
-        updated_at: new Date(),
-        properties: {}
-      });
-      mockEventRepo.create.mockResolvedValue({
-        id: 'event-1',
-        metric_id: 'metric-1',
-        profile_id: 'profile-1',
-        timestamp: new Date('2025-01-01T00:00:00Z'),
-        value: 10.99,
-        properties: { source: 'test' },
-        raw_data: expect.any(Object)
-      });
+      // Mock the repository response
+      const mockCreatedFlows = [
+        { id: 'flow-1', name: 'Welcome Flow' },
+        { id: 'flow-2', name: 'Abandoned Cart Flow' }
+      ];
+      
+      // Setup mocks
+      (klaviyoApiClient.getFlows as jest.Mock).mockResolvedValue(mockApiResponse);
+      (flowRepository.createBatch as jest.Mock).mockResolvedValue(mockCreatedFlows);
       
       // Call the method
-      const result = await service.syncRecentEvents(24);
+      const result = await dataSyncService.syncFlows();
       
-      // Verify results
-      expect(result).toBe(1);
-      expect(mockKlaviyoClient.getEvents).toHaveBeenCalledTimes(1);
-      expect(mockProfileRepo.createOrUpdate).toHaveBeenCalledTimes(1);
-      expect(mockEventRepo.create).toHaveBeenCalledTimes(1);
+      // Verify API was called
+      expect(klaviyoApiClient.getFlows).toHaveBeenCalledTimes(1);
+      
+      // Verify repository was called with transformed data
+      expect(flowRepository.createBatch).toHaveBeenCalledTimes(1);
+      const createBatchArg = (flowRepository.createBatch as jest.Mock).mock.calls[0][0];
+      
+      // Verify the transformed data structure
+      expect(createBatchArg).toHaveLength(2);
+      expect(createBatchArg[0].id).toBe('flow-1');
+      expect(createBatchArg[0].name).toBe('Welcome Flow');
+      expect(createBatchArg[0].status).toBe('active');
+      expect(createBatchArg[0].trigger_type).toBe('list');
+      expect(createBatchArg[0].recipient_count).toBe(1000);
+      expect(createBatchArg[0].open_count).toBe(800);
+      expect(createBatchArg[0].revenue).toBe(5000);
+      
+      // Verify result
+      expect(result.success).toBe(true);
+      expect(result.count).toBe(2);
+    });
+    
+    it('should handle API error response', async () => {
+      // Mock API error
+      (klaviyoApiClient.getFlows as jest.Mock).mockResolvedValue(null);
+      
+      // Call the method
+      const result = await dataSyncService.syncFlows();
+      
+      // Verify API was called
+      expect(klaviyoApiClient.getFlows).toHaveBeenCalledTimes(1);
+      
+      // Verify repository was not called
+      expect(flowRepository.createBatch).not.toHaveBeenCalled();
+      
+      // Verify result
+      expect(result.success).toBe(false);
+      expect(result.count).toBe(0);
     });
   });
   
   describe('syncAll', () => {
-    it('should sync all data types', async () => {
+    it('should sync all entity types', async () => {
       // Mock individual sync methods
-      jest.spyOn(service, 'syncMetrics').mockResolvedValue(5);
-      jest.spyOn(service, 'syncProfiles').mockResolvedValue(10);
-      jest.spyOn(service, 'syncRecentEvents').mockResolvedValue(20);
-      jest.spyOn(service, 'syncCampaigns').mockResolvedValue(3);
-      jest.spyOn(service, 'syncFlows').mockResolvedValue(2);
-      
-      // Call the method
-      const result = await service.syncAll();
-      
-      // Verify results
-      expect(result).toEqual({
-        metrics: 5,
-        profiles: 10,
-        events: 20,
-        campaigns: 3,
-        flows: 2
+      jest.spyOn(dataSyncService, 'syncCampaigns').mockResolvedValue({
+        success: true,
+        count: 10,
+        message: 'Successfully synced 10 campaigns'
       });
       
-      // Verify all sync methods were called
-      expect(service.syncMetrics).toHaveBeenCalledTimes(1);
-      expect(service.syncProfiles).toHaveBeenCalledTimes(1);
-      expect(service.syncRecentEvents).toHaveBeenCalledWith(48);
-      expect(service.syncCampaigns).toHaveBeenCalledTimes(1);
-      expect(service.syncFlows).toHaveBeenCalledTimes(1);
+      jest.spyOn(dataSyncService, 'syncFlows').mockResolvedValue({
+        success: true,
+        count: 5,
+        message: 'Successfully synced 5 flows'
+      });
+      
+      // Call the method with only campaigns and flows
+      const result = await dataSyncService.syncAll({
+        entityTypes: ['campaigns', 'flows']
+      });
+      
+      // Verify individual sync methods were called
+      expect(dataSyncService.syncCampaigns).toHaveBeenCalledTimes(1);
+      expect(dataSyncService.syncFlows).toHaveBeenCalledTimes(1);
+      
+      // Verify result
+      expect(result.success).toBe(true);
+      expect(result.entityResults.campaigns).toBeDefined();
+      expect(result.entityResults.campaigns.success).toBe(true);
+      expect(result.entityResults.campaigns.count).toBe(10);
+      
+      expect(result.entityResults.flows).toBeDefined();
+      expect(result.entityResults.flows.success).toBe(true);
+      expect(result.entityResults.flows.count).toBe(5);
+      
+      expect(result.errors).toHaveLength(0);
     });
     
-    it('should handle errors during sync', async () => {
-      // Mock error in one of the sync methods
-      jest.spyOn(service, 'syncMetrics').mockResolvedValue(5);
-      jest.spyOn(service, 'syncProfiles').mockRejectedValue(new Error('Profile sync error'));
+    it('should handle errors in individual sync operations', async () => {
+      // Mock individual sync methods
+      jest.spyOn(dataSyncService, 'syncCampaigns').mockResolvedValue({
+        success: true,
+        count: 10,
+        message: 'Successfully synced 10 campaigns'
+      });
       
-      // Call the method and expect it to throw
-      await expect(service.syncAll()).rejects.toThrow('Profile sync error');
+      jest.spyOn(dataSyncService, 'syncFlows').mockRejectedValue(new Error('API error'));
       
-      // Verify error was logged
-      expect(logger.error).toHaveBeenCalledWith(
-        'Error during full data sync:',
-        expect.any(Error)
-      );
+      // Call the method
+      const result = await dataSyncService.syncAll({
+        entityTypes: ['campaigns', 'flows']
+      });
+      
+      // Verify result
+      expect(result.success).toBe(false);
+      expect(result.entityResults.campaigns).toBeDefined();
+      expect(result.entityResults.campaigns.success).toBe(true);
+      
+      expect(result.entityResults.flows).toBeDefined();
+      expect(result.entityResults.flows.success).toBe(false);
+      
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].message).toBe('API error');
     });
   });
 });

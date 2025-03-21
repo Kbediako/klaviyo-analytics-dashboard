@@ -171,6 +171,36 @@ If you see "Failed to fetch" errors in the frontend:
 
 ### Recent Updates
 
+#### Service Layer Enhancement (Phase 3)
+
+We've implemented significant service layer enhancements as part of the Gap Remediation Plan:
+
+1. **Flow Repository Implementation**:
+   - Complete CRUD operations for flow data
+   - Batch operations for efficiency
+   - Comprehensive test coverage
+   - Date range filtering and search capabilities
+   - Performance metrics aggregation
+
+2. **Database-First Approach**:
+   - Enhanced controllers to check database before API calls
+   - Automatic storage of API results for future requests
+   - Intelligent data transformation between API and database formats
+   - Improved error handling and logging
+
+3. **Data Synchronization**:
+   - New sync endpoints: POST /api/flows/sync and POST /api/sync/all
+   - Implemented DataSyncService for centralized sync management
+   - Added support for incremental sync with timestamp tracking
+   - Created sync_status_table for monitoring sync operations
+
+4. **Database Schema Expansion**:
+   - Added flows table with specialized indexes
+   - Implemented sync status tracking table
+   - Optimized schema for analytics queries
+
+See the [Phase 3 Implementation Summary](/Documentation/implementation/phase3-implementation-summary.md) for technical details.
+
 #### Database Optimization (Phase 2)
 
 We've implemented comprehensive database optimizations as part of the Gap Remediation Plan:
@@ -229,6 +259,8 @@ See [Integration Issues Guide](/Documentation/troubleshooting/integration-issues
 
 ## API Endpoints
 
+### Data Retrieval Endpoints
+
 | Endpoint | Description | Query Parameters |
 |----------|-------------|------------------|
 | `GET /api/overview` | High-level marketing metrics | `dateRange` (e.g., 'last-30-days') |
@@ -241,6 +273,15 @@ See [Integration Issues Guide](/Documentation/troubleshooting/integration-issues
 | `GET /api/charts/top-segments` | Top segments data | `dateRange` |
 | `GET /api/charts/top-flows` | Top flows data | `dateRange` |
 | `GET /api/charts/top-forms` | Top forms data | `dateRange` |
+| `GET /api/flows/metrics` | Flow performance metrics | `dateRange` |
+
+### Sync Endpoints
+
+| Endpoint | Description | Query Parameters |
+|----------|-------------|------------------|
+| `POST /api/flows/sync` | Sync flow data from Klaviyo API | `force` (true/false), `since` (ISO timestamp) |
+| `POST /api/sync/all` | Sync all entity types | `force` (true/false), `since` (ISO timestamp), `entities` (comma-separated list) |
+| `GET /api/sync/status` | Get sync status information | none |
 
 ## Development Workflow
 
