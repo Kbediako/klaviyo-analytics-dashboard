@@ -241,6 +241,14 @@ This gap remediation plan is designed to be completed in approximately 8 weeks:
    - ✅ Implement force sync option to override incremental sync when needed (completed)
    - ✅ Add comprehensive tests for incremental sync functionality (completed)
 
+6. **Data Sync Service Enhancement** - ⏳ Partially Completed
+   - ✅ Add placeholder methods for required sync operations (completed)
+   - ⏳ Implement `syncMetrics()` method with proper Klaviyo metrics API integration (pending)
+   - ⏳ Implement `syncRecentEvents()` method with date range filtering (pending)
+   - ⏳ Implement `syncProfiles()` method to retrieve and store customer profiles (pending)
+   - ⏳ Add comprehensive tests for new sync methods (pending)
+   - ⏳ Add documentation for data synchronization architecture (pending)
+
 For the detailed implementation summary of the completed work in Phase 3, see [Phase 3 Implementation Summary](./phase3-implementation-summary.md).
 
 ### Phase 4 Gap Remediation: Analytics Engine Development
