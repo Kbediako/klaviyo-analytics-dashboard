@@ -16,6 +16,7 @@ The dashboard requires a valid Klaviyo API key with appropriate permissions to a
 
 ```env
 KLAVIYO_API_KEY=pk_2d109a05c4b7b9bb3b7259ba172e385f2d
+KLAVIYO_API_VERSION=2025-01-15
 PORT=3001
 DEBUG=true
 ```
@@ -43,8 +44,9 @@ Typical metric types needed:
 
 ### API Version
 
-- The dashboard uses Klaviyo API version `2023-07-15`
-- All requests include this version in the `revision` header
+- The dashboard uses Klaviyo API version `2025-01-15` (latest as of March 2025)
+- All requests include this version in the `revision` header (lowercase, as required by Klaviyo)
+- The API version can be configured via the `KLAVIYO_API_VERSION` environment variable
 
 ## Implementation Details
 
@@ -172,8 +174,8 @@ DEBUG=* npm run dev
 Use tools like Postman or curl to test specific endpoints:
 
 ```bash
-curl -H "Authorization: Klaviyo-API-Key pk_2d109a05c4b7b9bb3b7259ba172e385f2d" \
-     -H "revision: 2023-07-15" \
+curl -H "Authorization: Bearer pk_2d109a05c4b7b9bb3b7259ba172e385f2d" \
+     -H "revision: 2025-01-15" \
      -H "Accept: application/json" \
      https://a.klaviyo.com/api/metrics
 ```

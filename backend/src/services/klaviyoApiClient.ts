@@ -137,17 +137,19 @@ export class KlaviyoApiClient {
   }
   
   /**
-   * Initialize the client by verifying the API key
+   * Initialize the client by verifying the API key and API version
    * This is called automatically on the first API request, but can be called manually
-   * to verify the API key before making any requests.
+   * to verify the API key and version before making any requests.
    * 
    * @returns Promise that resolves when initialization is complete
    * @throws {AuthenticationError} If the API key is invalid
+   * @throws {ApiError} If the API version is not supported
    * 
    * @remarks
    * This method makes a test request to the Klaviyo API to verify that the API key
-   * is valid and has the necessary permissions. It's recommended to call this method
-   * during application startup to catch authentication issues early.
+   * is valid and has the necessary permissions. It also confirms that the specified
+   * API version is supported by Klaviyo. It's recommended to call this method
+   * during application startup to catch authentication and configuration issues early.
    * 
    * @example
    * ```typescript
@@ -167,9 +169,11 @@ export class KlaviyoApiClient {
     }
     
     try {
+      // Verify API key and version in a single request
       await this.verifyApiKey();
       this.isInitialized = true;
       console.log('Klaviyo API client initialized successfully');
+      console.log(`Using API version: ${this.apiVersion}`);
     } catch (error) {
       this.isInitialized = false;
       console.error('Failed to initialize Klaviyo API client:', error);
