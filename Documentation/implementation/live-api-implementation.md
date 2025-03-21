@@ -137,9 +137,50 @@ This document outlines the implementation of live Klaviyo API integration for th
 - [ ] Add performance optimization tips for production use
 
 ## Running with Live API
+
+Before running with the live API, make sure to set up your environment variables:
+
+1. Create a `.env` file in the root directory with your Klaviyo API key:
+```
+KLAVIYO_API_KEY=your_klaviyo_api_key_here
+```
+
+2. Create a `.env` file in the backend directory with database credentials:
+```
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=klaviyo_analytics
+```
+
 To run the application with live API integration:
 ```bash
 ./run-with-live-api.sh
 ```
 
 This will start both the frontend (port 3000) and backend (port 3001) with live API connectivity.
+
+## Troubleshooting Live API Issues
+
+### Common Issues
+
+1. **TypeScript Errors in DataSyncService**: If you encounter TypeScript errors related to missing methods like `syncMetrics` or `syncRecentEvents`, make sure you have added these methods to the `DataSyncService` class.
+
+2. **API Authentication Errors**: Check that your Klaviyo API key has the correct permissions and is properly set in your `.env` file.
+
+3. **Rate Limiting**: If you encounter frequent rate limiting errors (429 responses), adjust the delay between API calls in `klaviyoApiClient.ts`.
+
+4. **500 Server Errors**: These usually indicate issues with the Klaviyo API itself. Check the Klaviyo status page or try again later.
+
+5. **Empty Responses**: Make sure your Klaviyo account has data for the specific entity types you're querying. The application will fall back to mock data if no results are found.
+
+### Debug Mode
+
+To enable debug logging for API calls, set the `LOG_LEVEL` environment variable to `debug`:
+
+```
+LOG_LEVEL=debug
+```
+
+This will show detailed information about API requests, responses, caching, and rate limiting.

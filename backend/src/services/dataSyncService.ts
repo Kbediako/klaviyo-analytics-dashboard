@@ -37,6 +37,58 @@ export interface SyncResult {
  */
 export class DataSyncService {
   /**
+   * Sync metrics data
+   * @returns Sync result for metrics
+   */
+  async syncMetrics(): Promise<{
+    success: boolean;
+    count: number;
+    message: string;
+  }> {
+    logger.info('Syncing metrics data');
+    return {
+      success: true,
+      count: 0,
+      message: 'Metrics sync placeholder - implementation pending'
+    };
+  }
+
+  /**
+   * Sync recent events data
+   * @param hours Number of hours to sync
+   * @returns Sync result for events
+   */
+  async syncRecentEvents(hours: number = 24): Promise<{
+    success: boolean;
+    count: number;
+    message: string;
+  }> {
+    logger.info(`Syncing events data for the last ${hours} hours`);
+    return {
+      success: true,
+      count: 0,
+      message: 'Events sync placeholder - implementation pending'
+    };
+  }
+
+  /**
+   * Sync profiles data
+   * @returns Sync result for profiles
+   */
+  async syncProfiles(): Promise<{
+    success: boolean;
+    count: number;
+    message: string;
+  }> {
+    logger.info('Syncing profiles data');
+    return {
+      success: true,
+      count: 0,
+      message: 'Profiles sync placeholder - implementation pending'
+    };
+  }
+
+  /**
    * Sync all entity types
    * @param options Sync options
    * @returns Sync result
