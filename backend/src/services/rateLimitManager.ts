@@ -3,6 +3,14 @@
  * 
  * This module provides a singleton service for managing API rate limits
  * with dynamic backoff based on Klaviyo API response headers.
+ * 
+ * The Klaviyo API uses rate limiting to ensure fair usage of the API.
+ * This manager helps to avoid hitting rate limits by:
+ * 1. Tracking rate limit information from API response headers
+ * 2. Calculating appropriate delays between requests
+ * 3. Distributing requests evenly over time
+ * 
+ * @see https://developers.klaviyo.com/en/docs/rate_limits_and_error_handling
  */
 import { Headers as NodeFetchHeaders } from 'node-fetch';
 
@@ -48,6 +56,25 @@ export class RateLimitManager {
   
   // Safety buffer to avoid hitting rate limits (percentage)
   private safetyBuffer: number = 0.1;
+  
+  // Endpoint tiers for rate limiting (based on Klaviyo API documentation)
+  private endpointTiers: Record<string, string> = {
+    // High-volume endpoints (Tier L)
+    'profiles': 'L',
+    'events': 'L',
+    'metrics': 'L',
+    
+    // Medium-volume endpoints (Tier M)
+    'campaigns': 'M',
+    'flows': 'M',
+    'segments': 'M',
+    'lists': 'M',
+    
+    // Standard endpoints (Tier S)
+    'templates': 'S',
+    'tags': 'S',
+    'accounts': 'S'
+  };
   
   /**
    * Private constructor to enforce singleton pattern
@@ -125,12 +152,18 @@ export class RateLimitManager {
     // Normalize endpoint to handle path variations
     const normalizedEndpoint = this.normalizeEndpoint(endpoint);
     
+    // Get endpoint tier for more intelligent rate limiting
+    const tier = this.getEndpointTier(normalizedEndpoint);
+    
+    // Adjust default delay based on endpoint tier
+    const tierBasedDelay = this.getDelayForTier(tier);
+    
     // Get rate limit info for this endpoint
     const rateLimitInfo = this.rateLimits.get(normalizedEndpoint);
     
-    // If no rate limit info, use default delay
+    // If no rate limit info, use tier-based default delay
     if (!rateLimitInfo) {
-      return this.defaultDelay;
+      return tierBasedDelay;
     }
     
     // Calculate time until reset
@@ -208,6 +241,34 @@ export class RateLimitManager {
    */
   public setSafetyBuffer(buffer: number): void {
     this.safetyBuffer = Math.max(0, Math.min(buffer, 0.5)); // Limit to 0-50%
+  }
+  
+  /**
+   * Get the rate limit tier for an endpoint
+   * 
+   * @param endpoint Normalized endpoint name
+   * @returns Rate limit tier ('L', 'M', 'S')
+   */
+  private getEndpointTier(endpoint: string): string {
+    return this.endpointTiers[endpoint] || 'S'; // Default to standard tier
+  }
+  
+  /**
+   * Get the appropriate delay for a rate limit tier
+   * 
+   * @param tier Rate limit tier ('L', 'M', 'S')
+   * @returns Delay in milliseconds
+   */
+  private getDelayForTier(tier: string): number {
+    switch (tier) {
+      case 'L': // High-volume endpoints
+        return 500; // Lower delay for high-volume endpoints
+      case 'M': // Medium-volume endpoints
+        return 750; // Medium delay
+      case 'S': // Standard endpoints
+      default:
+        return this.defaultDelay; // Standard delay
+    }
   }
 }
 
