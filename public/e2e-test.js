@@ -3,6 +3,12 @@
  * 
  * These tests verify that the frontend and backend integrate correctly
  * and that the complete application flow works as expected.
+ * 
+ * IMPORTANT: When using browser automation or browser actions for testing:
+ * - Always scroll up and down to see the full application
+ * - The default browser window size (900x600) may not show all UI elements
+ * - Navigation tabs and important controls may be below the fold
+ * - Some interactive elements might only be visible after scrolling
  */
 
 // Mock API responses are already defined in dashboard.test.js

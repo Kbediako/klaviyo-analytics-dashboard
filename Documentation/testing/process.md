@@ -157,6 +157,40 @@ jobs:
    - Update screenshots
    - Review error messages
 
+## Browser-Based Testing
+
+### Using Browser Actions
+
+When testing the application using browser automation tools or browser actions:
+
+1. **Always scroll to see the full application**:
+   - Scroll all the way up and down to check the entire page
+   - The default browser window size (900x600) may not show all UI elements
+   - Navigation tabs and important controls may be below the fold
+   - Some interactive elements might only be visible after scrolling
+
+2. **Check for responsive behavior**:
+   - Test at different viewport sizes
+   - Verify that UI elements reflow correctly
+   - Ensure navigation remains accessible
+
+3. **Verify tab navigation**:
+   - Tabs may be positioned at different locations based on viewport size
+   - Ensure all tabs are accessible and functional
+   - Check that tab content loads correctly
+
+4. **Monitor console output**:
+   - Watch for errors and warnings
+   - Check for failed API requests
+   - Verify data loading indicators
+
+### Best Practices
+
+1. Take screenshots of the full page when testing
+2. Use explicit waits for content to load
+3. Verify both visible and non-visible (scrolled) content
+4. Test interactions with elements that require scrolling to access
+
 ## Troubleshooting
 
 ### Common Issues
@@ -175,6 +209,11 @@ jobs:
    - Test in multiple browsers
    - Check date parsing
    - Verify DOM interactions
+
+4. Visibility issues:
+   - Elements may be out of viewport (scroll required)
+   - Check z-index for overlapping elements
+   - Verify CSS media queries for responsive views
 
 ### Resolution Steps
 
