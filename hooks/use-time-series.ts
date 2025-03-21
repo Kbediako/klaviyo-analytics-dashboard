@@ -30,6 +30,8 @@ export interface UseTimeSeriesOptions {
   metricId: string;
   dateRange?: string;
   interval?: string;
+  maxPoints?: number;
+  downsampleMethod?: 'lttb' | 'minmax' | 'average' | 'none';
   enabled?: boolean;
   refetchInterval?: number;
 }
@@ -44,6 +46,8 @@ export function useTimeSeries({
   metricId,
   dateRange,
   interval = '1 day',
+  maxPoints,
+  downsampleMethod = 'lttb',
   enabled = true,
   refetchInterval
 }: UseTimeSeriesOptions) {
@@ -53,7 +57,9 @@ export function useTimeSeries({
     () => fetchFromAPI<TimeSeriesResponse>(`/analytics/timeseries/${metricId}`, {
       params: {
         dateRange: dateRange || dateRangeParam,
-        interval
+        interval,
+        maxPoints: maxPoints?.toString(),
+        downsampleMethod: maxPoints ? downsampleMethod : undefined
       }
     }).then(response => response.points),
     {
