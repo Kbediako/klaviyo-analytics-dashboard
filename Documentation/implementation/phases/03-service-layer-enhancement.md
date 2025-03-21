@@ -1,8 +1,8 @@
-# Phase 3: Service Layer Enhancement (Weeks 5-6)
+# Phase 3: Service Layer Enhancement
 
 ## Overview
 
-This phase focuses on implementing the service layer that handles data synchronization between Klaviyo's API and our local database, along with data processing and transformation.
+This phase focused on implementing the service layer that handles data synchronization between Klaviyo's API and our local database, along with data processing and transformation. We implemented the missing repository classes (FlowRepository, FormRepository, SegmentRepository) following the repository pattern, updated the controllers to use a database-first approach, and added sync endpoints for all entity types.
 
 ## Timeline
 
@@ -11,267 +11,253 @@ This phase focuses on implementing the service layer that handles data synchroni
 
 ## Implementation Details
 
-### 3.1 Implement Data Sync Service (Week 5)
+### 3.1 Database Migrations
+
+We created database migration files for the following tables:
+
+1. `klaviyo_flows` - Stores flow data including metrics like recipient count, open/click rates
+2. `klaviyo_forms` - Stores form data including views, submissions, and conversions
+3. `klaviyo_segments` - Stores segment data including member counts, conversion rates, and revenue
+4. `klaviyo_sync_status` - Tracks the last sync time for each entity type
+
+Example migration file for the segments table:
+
+```sql
+-- 007_segments_schema.sql
+CREATE TABLE klaviyo_segments (
+  id VARCHAR(50) PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  status VARCHAR(50) DEFAULT 'active',
+  member_count INTEGER DEFAULT 0,
+  active_count INTEGER DEFAULT 0, 
+  conversion_rate DECIMAL(5,2) DEFAULT 0,
+  revenue DECIMAL(12,2) DEFAULT 0,
+  created_date TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_synced_at TIMESTAMPTZ,
+  metadata JSONB
+);
+
+-- Create indexes for common queries
+CREATE INDEX idx_klaviyo_segments_status ON klaviyo_segments (status);
+CREATE INDEX idx_klaviyo_segments_name ON klaviyo_segments (name);
+CREATE INDEX idx_klaviyo_segments_created_date ON klaviyo_segments (created_date DESC);
+CREATE INDEX idx_klaviyo_segments_updated_at ON klaviyo_segments (updated_at DESC);
+```
+
+### 3.2 Repository Pattern Implementation
+
+We implemented repository classes for flows, forms, and segments following a consistent pattern:
 
 ```typescript
-// backend/src/services/dataSyncService.ts
-import { KlaviyoApiClient } from './klaviyoApiClient';
-import { MetricRepository } from '../repositories/metricRepository';
-import { ProfileRepository } from '../repositories/profileRepository';
-import { EventRepository } from '../repositories/eventRepository';
+// Repository Interface Pattern
+export interface Repository<T> {
+  findById(id: string): Promise<T | null>;
+  findByName(name: string): Promise<T[]>;
+  findByStatus(status: string): Promise<T[]>;
+  findByDateRange(startDate: Date, endDate: Date): Promise<T[]>;
+  create(item: Omit<T, 'created_at' | 'updated_at'>): Promise<T>;
+  createOrUpdate(item: Omit<T, 'updated_at'>): Promise<T>;
+  delete(id: string): Promise<boolean>;
+  findAll(limit?: number, offset?: number): Promise<T[]>;
+  createBatch(items: Omit<T, 'created_at' | 'updated_at'>[]): Promise<T[]>;
+  findUpdatedSince(since: Date): Promise<T[]>;
+  getLatestUpdateTimestamp(): Promise<Date | null>;
+}
+```
 
+Each repository includes:
+- CRUD operations (create, read, update, delete)
+- Batch operations for efficient data insertion
+- Search methods with various filters
+- Sync-related methods to support incremental sync
+
+### 3.3 Data Sync Service
+
+We enhanced the DataSyncService to support all entity types and implemented incremental sync:
+
+```typescript
 export class DataSyncService {
-  private klaviyoClient: KlaviyoApiClient;
-  private metricRepo: MetricRepository;
-  private profileRepo: ProfileRepository;
-  private eventRepo: EventRepository;
-  
-  constructor() {
-    this.klaviyoClient = new KlaviyoApiClient(process.env.KLAVIYO_API_KEY || '');
-    this.metricRepo = new MetricRepository();
-    this.profileRepo = new ProfileRepository();
-    this.eventRepo = new EventRepository();
-  }
-  
-  async syncMetrics(): Promise<void> {
-    try {
-      // Fetch all metrics from Klaviyo
-      const response = await this.klaviyoClient.get('/api/metrics', {
-        fields: {
-          metric: ['name', 'created', 'updated', 'integration']
-        },
-        page: { size: 100 }
-      });
-      
-      // Process and store each metric
-      const metrics = response.data;
-      for (const metric of metrics) {
-        await this.metricRepo.createOrUpdate({
-          id: metric.id,
-          name: metric.attributes.name,
-          created_at: new Date(metric.attributes.created),
-          integration_id: metric.attributes.integration?.id,
-          integration_name: metric.attributes.integration?.name,
-          integration_category: metric.attributes.integration?.category,
-          metadata: metric.attributes
-        });
-      }
-      
-      // Handle pagination if needed
-      if (response.links && response.links.next) {
-        // Fetch next page...
-      }
-      
-      console.log(`Synced ${metrics.length} metrics successfully`);
-    } catch (error) {
-      console.error('Error syncing metrics:', error);
-      throw error;
-    }
-  }
-  
-  async syncRecentEvents(hours: number = 24): Promise<void> {
-    try {
-      const now = new Date();
-      const startDate = new Date(now.getTime() - hours * 60 * 60 * 1000);
-      
-      // Format dates for Klaviyo API
-      const startString = startDate.toISOString();
-      const endString = now.toISOString();
-      
-      const response = await this.klaviyoClient.get('/api/events', {
-        filter: [
-          { field: 'datetime', operator: 'greater-or-equal', value: startString },
-          { field: 'datetime', operator: 'less-or-equal', value: endString }
-        ],
-        sort: ['-datetime'],
-        include: ['profile', 'metric'],
-        fields: {
-          event: ['datetime', 'timestamp', 'event_properties', 'value', 'uuid'],
-          profile: ['email', 'phone_number', 'first_name', 'last_name'],
-          metric: ['name', 'integration']
-        },
-        page: { size: 100 }
-      });
-      
-      // Process and store events
-      for (const event of response.data) {
-        // Store profile if it doesn't exist
-        if (event.relationships.profile) {
-          await this.profileRepo.createOrUpdate({
-            id: event.relationships.profile.data.id,
-            ...event.relationships.profile.attributes
-          });
+  /**
+   * Sync all entity types
+   * @param options Sync options
+   * @returns Sync result
+   */
+  async syncAll(options: SyncOptions = {}): Promise<SyncResult> {
+    const entityTypes = options.entityTypes || ['campaigns', 'flows', 'forms', 'segments'];
+    
+    logger.info(`Starting sync for entities: ${entityTypes.join(', ')}${options.force ? ' (forced)' : ''}`);
+    
+    // Run sync for each entity type
+    const syncPromises = entityTypes.map(async (entityType) => {
+      try {
+        switch (entityType) {
+          case 'campaigns':
+            result.entityResults.campaigns = await this.syncCampaigns(options);
+            break;
+          case 'flows':
+            result.entityResults.flows = await this.syncFlows(options);
+            break;
+          case 'forms':
+            result.entityResults.forms = await this.syncForms(options);
+            break;
+          case 'segments':
+            result.entityResults.segments = await this.syncSegments(options);
+            break;
         }
+      } catch (error) {
+        // Error handling...
+      }
+    });
+    
+    // Wait for all sync operations to complete
+    await Promise.all(syncPromises);
+    
+    return result;
+  }
+}
+```
+
+Key features of the sync service:
+- Support for both full and incremental syncs
+- Database timestamp tracking for efficient data updates
+- Proper error handling and retry mechanisms
+- Status tracking for monitoring sync operations
+
+### 3.4 Controller Implementation (Database-First Approach)
+
+We updated all controllers to follow a database-first approach:
+
+```typescript
+export async function getSegments(req: Request, res: Response) {
+  try {
+    // Parse date range from query parameter
+    const dateRangeStr = req.query.dateRange as string;
+    const dateRange = parseDateRange(dateRangeStr);
+    
+    // Try to get data from the database first
+    const segments = await segmentRepository.findByDateRange(dateRange.startDate, dateRange.endDate);
+    
+    // If we have data in the database, transform and return it
+    if (segments.length > 0) {
+      logger.info(`Retrieved ${segments.length} segments from database`);
+      
+      // Transform data for frontend
+      const transformedSegments = segments.map(segment => ({
+        id: segment.id,
+        name: segment.name,
+        count: segment.member_count || 0,
+        conversionRate: segment.conversion_rate || 0,
+        revenue: segment.revenue || 0
+      }));
+      
+      return res.status(200).json(transformedSegments);
+    }
+    
+    // If not found in database, fetch from API
+    logger.info('No segments found in database, fetching from API');
+    const apiSegments = await getSegmentsData(dateRange);
+    
+    // Store in database for future requests
+    if (apiSegments.length > 0) {
+      try {
+        const dbSegments = apiSegments.map(segment => ({
+          id: segment.id,
+          name: segment.name,
+          status: 'active',
+          member_count: segment.count || 0,
+          conversion_rate: segment.conversionRate || 0,
+          revenue: segment.revenue || 0,
+          created_date: new Date(),
+          metadata: { source: 'api' }
+        }));
         
-        // Store event
-        await this.eventRepo.create({
-          id: event.id,
-          metric_id: event.relationships.metric.data.id,
-          profile_id: event.relationships.profile.data.id,
-          timestamp: new Date(event.attributes.datetime),
-          value: event.attributes.value,
-          properties: event.attributes.event_properties,
-          raw_data: event
-        });
+        await segmentRepository.createBatch(dbSegments);
+        logger.info(`Stored ${dbSegments.length} segments in database`);
+      } catch (dbError) {
+        logger.error('Error storing segments in database:', dbError);
       }
-      
-      console.log(`Synced ${response.data.length} events from the last ${hours} hours`);
-    } catch (error) {
-      console.error('Error syncing recent events:', error);
-      throw error;
     }
-  }
-}
-```
-
-### 3.2 Create Scheduler for Regular Sync (Week 5)
-
-```typescript
-// backend/src/scheduler/index.ts
-import cron from 'node-cron';
-import { DataSyncService } from '../services/dataSyncService';
-
-export class SyncScheduler {
-  private dataSyncService: DataSyncService;
-  
-  constructor() {
-    this.dataSyncService = new DataSyncService();
-  }
-  
-  start(): void {
-    // Sync metrics daily at 1 AM
-    cron.schedule('0 1 * * *', async () => {
-      console.log('Running metrics sync job...');
-      try {
-        await this.dataSyncService.syncMetrics();
-        console.log('Metrics sync completed');
-      } catch (error) {
-        console.error('Metrics sync failed:', error);
-      }
-    });
     
-    // Sync recent events every hour
-    cron.schedule('0 * * * *', async () => {
-      console.log('Running hourly events sync...');
-      try {
-        await this.dataSyncService.syncRecentEvents(2); // Overlap by 1 hour
-        console.log('Events sync completed');
-      } catch (error) {
-        console.error('Events sync failed:', error);
-      }
+    // Return API data
+    return res.status(200).json(apiSegments);
+  } catch (error) {
+    // Error handling...
+  }
+}
+```
+
+### 3.5 API Routes for Sync Operations
+
+We added new endpoints for manually triggering sync operations:
+
+```typescript
+/**
+ * @route   POST /api/segments/sync
+ * @desc    Sync segments data from Klaviyo API to database
+ * @query   force - Whether to force a full sync (optional, default: false)
+ * @access  Public
+ */
+router.post('/sync', syncSegments);
+```
+
+These endpoints are excluded from caching middleware:
+
+```typescript
+// Special handling for segments routes to exclude sync endpoint from caching
+app.use('/api/segments/sync', segmentsRoutes);
+app.use('/api/segments', cacheMiddleware(CACHE_TTLS.segments), segmentsRoutes);
+```
+
+### 3.6 Comprehensive Testing
+
+We created comprehensive test suites for all repositories:
+
+```typescript
+describe('SegmentRepository', () => {
+  // Mock data setup...
+  
+  describe('findById', () => {
+    it('should find a segment by id', async () => {
+      // Test logic...
     });
-  }
-}
-```
 
-### 3.3 Update Controller Layer (Week 6)
+    it('should return null if segment not found', async () => {
+      // Test logic...
+    });
+  });
 
-```typescript
-// backend/src/controllers/campaignsController.ts
-import { Request, Response } from 'express';
-import { CampaignService } from '../services/campaignService';
-import { parseDateRange } from '../utils/dateUtils';
+  describe('createBatch', () => {
+    it('should create multiple segments in a transaction', async () => {
+      // Test logic...
+    });
 
-export class CampaignsController {
-  private campaignService: CampaignService;
-  
-  constructor() {
-    this.campaignService = new CampaignService();
-  }
-  
-  async getCampaigns(req: Request, res: Response): Promise<void> {
-    try {
-      const dateRange = parseDateRange(req.query.dateRange as string);
-      
-      // Check DB first
-      const campaignsFromDb = await this.campaignService.getCampaignsFromDb(dateRange);
-      
-      if (campaignsFromDb.length > 0) {
-        res.json(campaignsFromDb);
-        return;
-      }
-      
-      // If no data in DB, fetch from API
-      const campaigns = await this.campaignService.getCampaignsData(dateRange);
-      
-      res.json(campaigns);
-    } catch (error) {
-      console.error('Error fetching campaigns:', error);
-      res.status(500).json({ error: 'Failed to fetch campaigns' });
-    }
-  }
-}
-```
-
-## Testing
-
-### Unit Tests for Data Sync Service
-
-```typescript
-// backend/src/services/__tests__/dataSyncService.test.ts
-import { DataSyncService } from '../dataSyncService';
-import { KlaviyoApiClient } from '../klaviyoApiClient';
-import { MetricRepository } from '../../repositories/metricRepository';
-
-jest.mock('../klaviyoApiClient');
-jest.mock('../../repositories/metricRepository');
-
-describe('DataSyncService', () => {
-  let service: DataSyncService;
-  let mockKlaviyoClient: jest.Mocked<KlaviyoApiClient>;
-  let mockMetricRepo: jest.Mocked<MetricRepository>;
-  
-  beforeEach(() => {
-    mockKlaviyoClient = new KlaviyoApiClient('') as jest.Mocked<KlaviyoApiClient>;
-    mockMetricRepo = new MetricRepository() as jest.Mocked<MetricRepository>;
-    service = new DataSyncService();
+    it('should rollback transaction on error', async () => {
+      // Test logic...
+    });
   });
   
-  it('should sync metrics successfully', async () => {
-    const mockMetrics = {
-      data: [
-        {
-          id: 'metric-1',
-          attributes: {
-            name: 'Test Metric',
-            created: '2025-01-01T00:00:00Z',
-            integration: {
-              id: 'int-1',
-              name: 'Test Integration',
-              category: 'test'
-            }
-          }
-        }
-      ]
-    };
-    
-    mockKlaviyoClient.get.mockResolvedValueOnce(mockMetrics);
-    
-    await service.syncMetrics();
-    
-    expect(mockMetricRepo.createOrUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        id: 'metric-1',
-        name: 'Test Metric'
-      })
-    );
-  });
+  // Additional tests...
 });
 ```
 
 ## Success Criteria
 
-- [ ] Data sync service successfully fetches and stores data from Klaviyo API
-- [ ] Scheduled jobs running correctly and handling errors appropriately
-- [ ] Controllers using local database first, falling back to API when needed
-- [ ] All unit tests passing
-- [ ] Error handling and logging implemented
-- [ ] Performance metrics collected for sync operations
+- [x] Repository implementations for all entity types (flows, forms, segments)
+- [x] Data sync service successfully fetches and stores data from Klaviyo API
+- [x] Incremental sync functionality implemented and working correctly
+- [x] Controllers using local database first, falling back to API when needed
+- [x] Manual sync endpoints implemented for all entity types
+- [x] All unit tests passing
+- [x] Error handling and logging implemented
+- [x] Performance metrics collected for sync operations
 
 ## Next Steps
 
 After completing this phase:
-1. Monitor sync job performance and adjust schedules if needed
-2. Review error handling and recovery procedures
-3. Begin implementing analytics engine in Phase 4
-4. Plan frontend integration updates
+1. Implement the Analytics Engine in Phase 4
+2. Enhance frontend integration to use the new endpoints
+3. Add additional chart and visualization components
+4. Implement advanced filtering and segmentation capabilities
+5. Test the application with production-like data volumes

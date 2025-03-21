@@ -79,7 +79,13 @@ app.use('/api/campaigns', cacheMiddleware(CACHE_TTLS.campaigns), campaignsRoutes
 // Special handling for flows routes to exclude sync endpoint from caching
 app.use('/api/flows/sync', flowsRoutes);
 app.use('/api/flows', cacheMiddleware(CACHE_TTLS.flows), flowsRoutes);
+
+// Special handling for forms routes to exclude sync endpoint from caching
+app.use('/api/forms/sync', formsRoutes);
 app.use('/api/forms', cacheMiddleware(CACHE_TTLS.forms), formsRoutes);
+
+// Special handling for segments routes to exclude sync endpoint from caching
+app.use('/api/segments/sync', segmentsRoutes);
 app.use('/api/segments', cacheMiddleware(CACHE_TTLS.segments), segmentsRoutes);
 app.use('/api/analytics', cacheMiddleware(CACHE_TTLS.analytics), analyticsRoutes);
 
