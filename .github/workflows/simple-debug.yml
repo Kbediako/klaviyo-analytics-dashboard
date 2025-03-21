@@ -1,0 +1,16 @@
+name: Simple Debug Workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Person to greet'
+        required: true
+        default: 'World'
+
+jobs:
+  greet:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Greet
+        run: echo "Hello, ${{ github.event.inputs.name }}!"
