@@ -12,6 +12,9 @@ import {
   removePendingRequest,
   generateCacheKey 
 } from './cache';
+
+// Track last updated timestamps for each endpoint
+export const lastUpdatedTimestamps: Record<string, Date> = {};
 import { defaultOptions, getFullUrl, throttleRequest } from './config';
 import { withRetry, handleRateLimit } from './retry';
 import { getFallbackData } from './fallback';
@@ -79,8 +82,9 @@ export async function fetchFromAPI<T>(
 
       const data = await response.json() as T;
       
-      // Store in cache
+      // Store in cache and update timestamp
       setCacheEntry(cacheKey, data);
+      lastUpdatedTimestamps[endpoint] = new Date();
       
       return data;
     } catch (error) {

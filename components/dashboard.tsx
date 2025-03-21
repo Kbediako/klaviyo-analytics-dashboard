@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { DateRangeSelector } from './date-range-selector';
+import { DataFreshnessIndicator } from './data-freshness-indicator';
+import { lastUpdatedTimestamps } from '../lib/api/client';
 import { OverviewSection } from './overview-section';
 import { CampaignsTable } from './campaigns-table';
 import { FlowsTable } from './flows-table';
@@ -217,10 +219,16 @@ export function Dashboard() {
           <TabsContent value="campaigns" className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold tracking-tight">Campaigns</h2>
-              <Badge variant="outline" className="flex gap-2 items-center">
-                <div className={activeTab === 'campaigns' ? "h-2 w-2 animate-pulse rounded-full bg-green-500" : "h-2 w-2 rounded-full bg-gray-300"}></div>
-                {activeTab === 'campaigns' ? 'Live Data' : 'Inactive'}
-              </Badge>
+              <div className="flex items-center gap-4">
+                <DataFreshnessIndicator
+                  lastUpdated={lastUpdatedTimestamps['/api/campaigns']}
+                  onRefresh={() => forceRefreshData()}
+                />
+                <Badge variant="outline" className="flex gap-2 items-center">
+                  <div className={activeTab === 'campaigns' ? "h-2 w-2 animate-pulse rounded-full bg-green-500" : "h-2 w-2 rounded-full bg-gray-300"}></div>
+                  {activeTab === 'campaigns' ? 'Live Data' : 'Inactive'}
+                </Badge>
+              </div>
             </div>
             <CampaignsTable />
           </TabsContent>
@@ -228,10 +236,16 @@ export function Dashboard() {
           <TabsContent value="flows" className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold tracking-tight">Flows</h2>
-              <Badge variant="outline" className="flex gap-2 items-center">
-                <div className={activeTab === 'flows' ? "h-2 w-2 animate-pulse rounded-full bg-green-500" : "h-2 w-2 rounded-full bg-gray-300"}></div>
-                {activeTab === 'flows' ? 'Live Data' : 'Inactive'}
-              </Badge>
+              <div className="flex items-center gap-4">
+                <DataFreshnessIndicator
+                  lastUpdated={lastUpdatedTimestamps['/api/flows']}
+                  onRefresh={() => forceRefreshData()}
+                />
+                <Badge variant="outline" className="flex gap-2 items-center">
+                  <div className={activeTab === 'flows' ? "h-2 w-2 animate-pulse rounded-full bg-green-500" : "h-2 w-2 rounded-full bg-gray-300"}></div>
+                  {activeTab === 'flows' ? 'Live Data' : 'Inactive'}
+                </Badge>
+              </div>
             </div>
             <FlowsTable />
           </TabsContent>
@@ -239,10 +253,16 @@ export function Dashboard() {
           <TabsContent value="forms" className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold tracking-tight">Forms</h2>
-              <Badge variant="outline" className="flex gap-2 items-center">
-                <div className={activeTab === 'forms' ? "h-2 w-2 animate-pulse rounded-full bg-green-500" : "h-2 w-2 rounded-full bg-gray-300"}></div>
-                {activeTab === 'forms' ? 'Live Data' : 'Inactive'}
-              </Badge>
+              <div className="flex items-center gap-4">
+                <DataFreshnessIndicator
+                  lastUpdated={lastUpdatedTimestamps['/api/forms']}
+                  onRefresh={() => forceRefreshData()}
+                />
+                <Badge variant="outline" className="flex gap-2 items-center">
+                  <div className={activeTab === 'forms' ? "h-2 w-2 animate-pulse rounded-full bg-green-500" : "h-2 w-2 rounded-full bg-gray-300"}></div>
+                  {activeTab === 'forms' ? 'Live Data' : 'Inactive'}
+                </Badge>
+              </div>
             </div>
             <FormsTable />
           </TabsContent>
@@ -250,10 +270,16 @@ export function Dashboard() {
           <TabsContent value="segments" className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold tracking-tight">Segments</h2>
-              <Badge variant="outline" className="flex gap-2 items-center">
-                <div className={activeTab === 'segments' ? "h-2 w-2 animate-pulse rounded-full bg-green-500" : "h-2 w-2 rounded-full bg-gray-300"}></div>
-                {activeTab === 'segments' ? 'Live Data' : 'Inactive'}
-              </Badge>
+              <div className="flex items-center gap-4">
+                <DataFreshnessIndicator
+                  lastUpdated={lastUpdatedTimestamps['/api/segments']}
+                  onRefresh={() => forceRefreshData()}
+                />
+                <Badge variant="outline" className="flex gap-2 items-center">
+                  <div className={activeTab === 'segments' ? "h-2 w-2 animate-pulse rounded-full bg-green-500" : "h-2 w-2 rounded-full bg-gray-300"}></div>
+                  {activeTab === 'segments' ? 'Live Data' : 'Inactive'}
+                </Badge>
+              </div>
             </div>
             <SegmentsTable />
           </TabsContent>

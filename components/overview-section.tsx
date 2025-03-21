@@ -3,6 +3,8 @@ import { useOverviewMetrics } from '../hooks';
 import { MetricCard } from './metric-card';
 import { MetricCardSkeleton } from './metric-card-skeleton';
 import { ErrorAlert } from './error-alert';
+import { DataFreshnessIndicator } from './data-freshness-indicator';
+import { lastUpdatedTimestamps } from '../lib/api/client';
 import { 
   DollarSignIcon, 
   UsersIcon, 
@@ -86,7 +88,16 @@ export function OverviewSection() {
   
   // Show data if available
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 overview-section">
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <DataFreshnessIndicator
+          lastUpdated={lastUpdatedTimestamps['/api/overview']}
+          isLoading={isLoading}
+          isError={isError}
+          onRefresh={() => refetch()}
+        />
+      </div>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 overview-section">
       <MetricCard
         title="Total Revenue"
         value={data.revenue.current}
@@ -118,6 +129,7 @@ export function OverviewSection() {
         icon={<FormInputIcon className="h-4 w-4" />}
         color="amber"
       />
+      </div>
     </div>
   );
 }
