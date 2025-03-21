@@ -184,8 +184,12 @@ export function parseDateRange(dateRangeStr: string = 'last-30-days'): DateRange
  * @returns A filter string for Klaviyo API
  */
 export function generateKlaviyoDateFilter(field: string, dateRange: DateRange): string {
-  // Remove quotes around date values as per Klaviyo API requirements
-  return `greater-or-equal(${field},${dateRange.start}),less-or-equal(${field},${dateRange.end})`;
+  // Adjust dates by 1ms to make them inclusive with greater-than/less-than
+  const startDate = new Date(new Date(dateRange.start).getTime() - 1).toISOString();
+  const endDate = new Date(new Date(dateRange.end).getTime() + 1).toISOString();
+  
+  // Use greater-than and less-than as per Klaviyo API requirements
+  return `greater-than(${field},${startDate}),less-than(${field},${endDate})`;
 }
 
 /**

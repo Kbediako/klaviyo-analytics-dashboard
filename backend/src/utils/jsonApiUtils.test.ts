@@ -49,14 +49,14 @@ describe('jsonApiUtils', () => {
         filter: [
           {
             field: 'created',
-            operator: 'greater-or-equal',
+            operator: 'greater-than',
             value: date
           }
         ]
       };
       
       const result = buildQueryString(params);
-      expect(result).toBe(`?filter=greater-or-equal(created,${date.toISOString()})`);
+      expect(result).toBe(`?filter=greater-than(created,${date.toISOString()})`);
     });
     
     it('should build a query string with sort parameters', () => {
@@ -311,16 +311,22 @@ describe('jsonApiUtils', () => {
       const result = createDateRangeFilter('created', startDate, endDate);
       
       expect(result).toHaveLength(2);
-      expect(result[0]).toEqual({
-        field: 'created',
-        operator: 'greater-or-equal',
-        value: startDate
-      });
-      expect(result[1]).toEqual({
-        field: 'created',
-        operator: 'less-or-equal',
-        value: endDate
-      });
+      
+      // Check first filter (greater-than with adjusted date)
+      expect(result[0].field).toBe('created');
+      expect(result[0].operator).toBe('greater-than');
+      // The value should be 1ms before startDate
+      const expectedStartDate = new Date(startDate.getTime() - 1);
+      expect(result[0].value).toEqual(expect.any(Date));
+      expect((result[0].value as Date).getTime()).toBe(expectedStartDate.getTime());
+      
+      // Check second filter (less-than with adjusted date)
+      expect(result[1].field).toBe('created');
+      expect(result[1].operator).toBe('less-than');
+      // The value should be 1ms after endDate
+      const expectedEndDate = new Date(endDate.getTime() + 1);
+      expect(result[1].value).toEqual(expect.any(Date));
+      expect((result[1].value as Date).getTime()).toBe(expectedEndDate.getTime());
     });
   });
 });

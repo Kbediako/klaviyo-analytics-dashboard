@@ -10,7 +10,7 @@
  */
 export interface FilterParam {
   field: string;
-  operator: 'equals' | 'greater-than' | 'less-than' | 'greater-or-equal' | 'less-or-equal' | 'contains';
+  operator: 'equals' | 'greater-than' | 'less-than' | 'contains';
   value: string | number | boolean | Date;
 }
 
@@ -41,8 +41,6 @@ export function isFilterParam(value: unknown): value is FilterParam {
     'equals', 
     'greater-than', 
     'less-than', 
-    'greater-or-equal', 
-    'less-or-equal', 
     'contains'
   ];
   
@@ -96,6 +94,7 @@ export interface JsonApiParams {
   sort?: string[] | string;
   include?: string[] | string;
   fields?: SparseFieldset;
+  'additional-fields'?: SparseFieldset;
   page?: {
     cursor?: string;
     size?: number;
@@ -150,6 +149,11 @@ export function isJsonApiParams(value: unknown): value is JsonApiParams {
   
   // Check fields
   if (candidate.fields !== undefined && !isSparseFieldset(candidate.fields)) {
+    return false;
+  }
+  
+  // Check additional-fields
+  if (candidate['additional-fields'] !== undefined && !isSparseFieldset(candidate['additional-fields'])) {
     return false;
   }
   
@@ -242,6 +246,13 @@ export function buildQueryString(params: JsonApiParams): string {
     });
   }
   
+  // Add additional-fields parameters
+  if (params['additional-fields']) {
+    Object.entries(params['additional-fields']).forEach(([resourceType, fields]) => {
+      queryParams.append(`additional-fields[${resourceType}]`, fields.join(','));
+    });
+  }
+  
   // Add pagination parameters
   if (params.page) {
     if (params.page.cursor) {
@@ -323,13 +334,13 @@ export function createDateRangeFilter(
   return [
     {
       field,
-      operator: 'greater-or-equal',
-      value: startDate
+      operator: 'greater-than',
+      value: new Date(startDate.getTime() - 1) // Subtract 1ms to make it inclusive
     },
     {
       field,
-      operator: 'less-or-equal',
-      value: endDate
+      operator: 'less-than',
+      value: new Date(endDate.getTime() + 1) // Add 1ms to make it inclusive
     }
   ];
 }
