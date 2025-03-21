@@ -313,4 +313,77 @@ describe('FlowRepository', () => {
       expect(metrics.avgConversionRate).toBe(0);
     });
   });
+
+  describe('findUpdatedSince', () => {
+    it('should find flows updated since a given timestamp', async () => {
+      // Create a flow
+      const firstFlow = await flowRepository.create(testFlow);
+      
+      // Wait a moment to ensure timestamps differ
+      await new Promise(resolve => setTimeout(resolve, 10));
+      
+      // Create another flow
+      const secondFlow = await flowRepository.create({
+        ...testFlow,
+        id: 'test-flow-456',
+        name: 'Test Abandoned Cart Flow'
+      });
+      
+      // Find flows updated after the first flow's creation
+      const cutoffTime = new Date(firstFlow.updated_at.getTime() + 1);
+      const updatedFlows = await flowRepository.findUpdatedSince(cutoffTime);
+      
+      // Should only find the second flow
+      expect(updatedFlows).toHaveLength(1);
+      expect(updatedFlows[0].id).toBe('test-flow-456');
+      expect(updatedFlows[0].name).toBe('Test Abandoned Cart Flow');
+    });
+    
+    it('should return empty array when no flows are updated since the timestamp', async () => {
+      // Create a flow
+      await flowRepository.create(testFlow);
+      
+      // Wait a moment
+      await new Promise(resolve => setTimeout(resolve, 10));
+      
+      // Use current time as cutoff
+      const cutoffTime = new Date();
+      const updatedFlows = await flowRepository.findUpdatedSince(cutoffTime);
+      
+      // Should find no flows
+      expect(updatedFlows).toHaveLength(0);
+    });
+  });
+
+  describe('getLatestUpdateTimestamp', () => {
+    it('should return the latest update timestamp', async () => {
+      // Create a flow
+      const firstFlow = await flowRepository.create(testFlow);
+      
+      // Wait a moment
+      await new Promise(resolve => setTimeout(resolve, 10));
+      
+      // Create another flow with a later timestamp
+      const secondFlow = await flowRepository.create({
+        ...testFlow,
+        id: 'test-flow-456',
+        name: 'Test Abandoned Cart Flow'
+      });
+      
+      // Get latest timestamp
+      const latestTimestamp = await flowRepository.getLatestUpdateTimestamp();
+      
+      // Should match the second flow's updated_at
+      expect(latestTimestamp).toBeInstanceOf(Date);
+      expect(latestTimestamp?.getTime()).toBe(secondFlow.updated_at.getTime());
+    });
+    
+    it('should return null when no flows exist', async () => {
+      // Get latest timestamp from empty table
+      const latestTimestamp = await flowRepository.getLatestUpdateTimestamp();
+      
+      // Should be null
+      expect(latestTimestamp).toBeNull();
+    });
+  });
 });

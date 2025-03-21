@@ -1,5 +1,6 @@
 import { logger } from '../utils/logger';
 import { klaviyoApiClient } from './klaviyoApiClient';
+import { db } from '../database';
 import campaignRepository from '../repositories/campaignRepository';
 import { flowRepository } from '../repositories/flowRepository';
 // We'll add the other repositories as they're implemented
@@ -184,12 +185,39 @@ export class DataSyncService {
     message: string;
   }> {
     try {
-      logger.info(`Starting flows sync${options.force ? ' (forced)' : ''}${options.since ? ` since ${options.since.toISOString()}` : ''}`);
+      const startTime = new Date();
+      
+      // Determine if we're doing an incremental sync or full sync
+      let incrementalSync = !options.force;
+      let lastSyncTime: Date | null = null;
+      
+      if (incrementalSync) {
+        // If a specific timestamp is provided, use that
+        if (options.since) {
+          lastSyncTime = options.since;
+          logger.info(`Using provided timestamp for incremental sync: ${lastSyncTime.toISOString()}`);
+        } else {
+          // Otherwise, get the last sync timestamp from the database
+          lastSyncTime = await this.getLastSyncTimestamp('flows');
+          
+          if (lastSyncTime) {
+            logger.info(`Using last sync timestamp for incremental sync: ${lastSyncTime.toISOString()}`);
+          } else {
+            incrementalSync = false;
+            logger.info('No previous sync timestamp found, performing full sync');
+          }
+        }
+      }
+      
+      logger.info(`Starting flows sync${options.force ? ' (forced)' : ''}${incrementalSync ? ' (incremental)' : ' (full)'}`);
       
       // Get flows from Klaviyo API
       const flowsResponse = await klaviyoApiClient.getFlows();
       
       if (!flowsResponse || !flowsResponse.data || !Array.isArray(flowsResponse.data)) {
+        // Track failed sync
+        await this.trackSyncTimestamp('flows', startTime, 'failed', 0, false, 'Invalid response from Klaviyo API');
+        
         return {
           success: false,
           count: 0,
@@ -200,8 +228,24 @@ export class DataSyncService {
       const flows = flowsResponse.data;
       logger.info(`Retrieved ${flows.length} flows from Klaviyo API`);
       
+      // Filter flows for incremental sync if we have a timestamp
+      let flowsToProcess = flows;
+      if (incrementalSync && lastSyncTime) {
+        flowsToProcess = flows.filter(flow => {
+          const attributes = flow.attributes || {};
+          const updatedAt = attributes.updated_at ? new Date(attributes.updated_at) : null;
+          
+          // Include if:
+          // 1. No updated_at (we can't tell if it's changed)
+          // 2. Updated since last sync
+          return !updatedAt || updatedAt > lastSyncTime!;
+        });
+        
+        logger.info(`Filtered to ${flowsToProcess.length} flows updated since last sync`);
+      }
+      
       // Prepare flows for database storage
-      const dbFlows = flows.map(flow => {
+      const dbFlows = flowsToProcess.map(flow => {
         const attributes = flow.attributes || {};
         const metrics = attributes.metrics || {};
         const revenue = parseFloat(metrics.revenue || '0');
@@ -225,7 +269,16 @@ export class DataSyncService {
       });
       
       // Store flows in database
-      const createdFlows = await flowRepository.createBatch(dbFlows);
+      let createdFlows: any[] = [];
+      if (dbFlows.length > 0) {
+        createdFlows = await flowRepository.createBatch(dbFlows);
+        logger.info(`Stored ${createdFlows.length} flows in database`);
+      } else {
+        logger.info('No flows to update in database');
+      }
+      
+      // Track successful sync
+      await this.trackSyncTimestamp('flows', startTime, 'synced', createdFlows.length, true);
       
       return {
         success: true,
@@ -234,6 +287,21 @@ export class DataSyncService {
       };
     } catch (error) {
       logger.error('Error in flows sync:', error);
+      
+      // Track failed sync
+      try {
+        await this.trackSyncTimestamp(
+          'flows', 
+          new Date(), 
+          'failed', 
+          0, 
+          false, 
+          error instanceof Error ? error.message : 'Unknown error'
+        );
+      } catch (trackError) {
+        logger.error('Error tracking sync failure:', trackError);
+      }
+      
       throw error;
     }
   }
@@ -242,16 +310,34 @@ export class DataSyncService {
    * Track last sync timestamp for incremental syncs
    * @param entityType Entity type
    * @param timestamp Timestamp
+   * @param status Status of the sync operation
+   * @param recordCount Number of records synced
+   * @param success Whether the sync was successful
+   * @param errorMessage Error message if the sync failed
    */
-  async trackSyncTimestamp(entityType: string, timestamp: Date = new Date()): Promise<void> {
+  async trackSyncTimestamp(
+    entityType: string, 
+    timestamp: Date = new Date(),
+    status: string = 'synced',
+    recordCount: number = 0,
+    success: boolean = true,
+    errorMessage?: string
+  ): Promise<void> {
     try {
-      // This would normally be stored in a database table
-      // For now, we'll log it
       logger.info(`Tracking sync timestamp for ${entityType}: ${timestamp.toISOString()}`);
       
-      // TODO: Store sync timestamps in database
+      // Update the sync status table
+      await db.query(
+        `UPDATE klaviyo_sync_status 
+         SET last_sync_time = $1, status = $2, record_count = $3, success = $4, error_message = $5
+         WHERE entity_type = $6`,
+        [timestamp, status, recordCount, success, errorMessage || null, entityType]
+      );
+      
+      logger.debug(`Updated sync status for ${entityType}`);
     } catch (error) {
       logger.error(`Error tracking sync timestamp for ${entityType}:`, error);
+      throw error;
     }
   }
   
@@ -262,15 +348,84 @@ export class DataSyncService {
    */
   async getLastSyncTimestamp(entityType: string): Promise<Date | null> {
     try {
-      // This would normally be retrieved from a database table
-      // For now, we'll return null
       logger.info(`Getting last sync timestamp for ${entityType}`);
       
-      // TODO: Retrieve sync timestamps from database
-      return null;
+      // Query the sync status table
+      const result = await db.query(
+        `SELECT last_sync_time, status, success
+         FROM klaviyo_sync_status
+         WHERE entity_type = $1`,
+        [entityType]
+      );
+      
+      if (result.rows.length === 0) {
+        logger.warn(`No sync status found for ${entityType}`);
+        return null;
+      }
+      
+      const syncStatus = result.rows[0];
+      
+      // If the last sync was not successful, return null to force a full sync
+      if (!syncStatus.success || syncStatus.status === 'not_synced') {
+        logger.info(`Last sync for ${entityType} was not successful or not completed, returning null`);
+        return null;
+      }
+      
+      logger.debug(`Last sync timestamp for ${entityType}: ${syncStatus.last_sync_time.toISOString()}`);
+      return syncStatus.last_sync_time;
     } catch (error) {
       logger.error(`Error getting sync timestamp for ${entityType}:`, error);
       return null;
+    }
+  }
+  
+  /**
+   * Get sync status information
+   * @returns Object with sync status for each entity type
+   */
+  async getSyncStatus(): Promise<{
+    [key: string]: {
+      lastSyncTime: Date | null;
+      status: string;
+      recordCount: number;
+      success: boolean;
+      errorMessage: string | null;
+    }
+  }> {
+    try {
+      logger.info('Getting sync status for all entity types');
+      
+      // Query the sync status table for all entity types
+      const result = await db.query(
+        `SELECT entity_type, last_sync_time, status, record_count, success, error_message
+         FROM klaviyo_sync_status`
+      );
+      
+      // Transform the results into the desired format
+      const syncStatus: {
+        [key: string]: {
+          lastSyncTime: Date | null;
+          status: string;
+          recordCount: number;
+          success: boolean;
+          errorMessage: string | null;
+        }
+      } = {};
+      
+      for (const row of result.rows) {
+        syncStatus[row.entity_type] = {
+          lastSyncTime: row.last_sync_time,
+          status: row.status,
+          recordCount: row.record_count,
+          success: row.success,
+          errorMessage: row.error_message
+        };
+      }
+      
+      return syncStatus;
+    } catch (error) {
+      logger.error('Error getting sync status:', error);
+      throw error;
     }
   }
 }

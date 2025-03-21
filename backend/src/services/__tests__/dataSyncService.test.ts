@@ -1,5 +1,6 @@
 import { DataSyncService } from '../dataSyncService';
 import { klaviyoApiClient } from '../klaviyoApiClient';
+import { db } from '../../database';
 import campaignRepository from '../../repositories/campaignRepository';
 import { flowRepository } from '../../repositories/flowRepository';
 
@@ -8,6 +9,13 @@ jest.mock('../klaviyoApiClient', () => ({
   klaviyoApiClient: {
     getCampaigns: jest.fn(),
     getFlows: jest.fn()
+  }
+}));
+
+jest.mock('../../database', () => ({
+  db: {
+    query: jest.fn().mockResolvedValue({ rows: [] }),
+    transaction: jest.fn().mockImplementation(async (callback) => callback({ query: jest.fn().mockResolvedValue({ rows: [] }) }))
   }
 }));
 
@@ -20,7 +28,9 @@ jest.mock('../../repositories/campaignRepository', () => ({
 
 jest.mock('../../repositories/flowRepository', () => ({
   flowRepository: {
-    createBatch: jest.fn()
+    createBatch: jest.fn(),
+    findUpdatedSince: jest.fn(),
+    getLatestUpdateTimestamp: jest.fn()
   }
 }));
 
@@ -262,6 +272,225 @@ describe('DataSyncService', () => {
       
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0].message).toBe('API error');
+    });
+  });
+  
+  describe('Sync tracking and status', () => {
+    it('should track sync timestamp correctly', async () => {
+      // Setup
+      const timestamp = new Date();
+      const entityType = 'flows';
+      const status = 'synced';
+      const recordCount = 10;
+      const success = true;
+      
+      // Mock db.query to return successful result
+      (db.query as jest.Mock).mockResolvedValueOnce({ rowCount: 1 });
+      
+      // Call the method
+      await dataSyncService.trackSyncTimestamp(entityType, timestamp, status, recordCount, success);
+      
+      // Verify db query was called with correct parameters
+      expect(db.query).toHaveBeenCalledTimes(1);
+      expect(db.query).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE klaviyo_sync_status'),
+        [timestamp, status, recordCount, success, null, entityType]
+      );
+    });
+    
+    it('should get last sync timestamp correctly', async () => {
+      // Setup
+      const mockTimestamp = new Date();
+      
+      // Mock db.query to return a sync record
+      (db.query as jest.Mock).mockResolvedValueOnce({
+        rows: [{
+          last_sync_time: mockTimestamp,
+          status: 'synced',
+          success: true
+        }]
+      });
+      
+      // Call the method
+      const result = await dataSyncService.getLastSyncTimestamp('flows');
+      
+      // Verify db query was called correctly
+      expect(db.query).toHaveBeenCalledTimes(1);
+      expect(db.query).toHaveBeenCalledWith(
+        expect.stringContaining('SELECT last_sync_time'),
+        ['flows']
+      );
+      
+      // Verify result
+      expect(result).toEqual(mockTimestamp);
+    });
+    
+    it('should return null when sync was not successful', async () => {
+      // Mock db.query to return a failed sync record
+      (db.query as jest.Mock).mockResolvedValueOnce({
+        rows: [{
+          last_sync_time: new Date(),
+          status: 'failed',
+          success: false
+        }]
+      });
+      
+      // Call the method
+      const result = await dataSyncService.getLastSyncTimestamp('flows');
+      
+      // Verify result
+      expect(result).toBeNull();
+    });
+    
+    it('should return sync status for all entity types', async () => {
+      // Mock db.query to return multiple sync records
+      const mockRecords = [
+        {
+          entity_type: 'campaigns',
+          last_sync_time: new Date('2023-01-01'),
+          status: 'synced',
+          record_count: 10,
+          success: true,
+          error_message: null
+        },
+        {
+          entity_type: 'flows',
+          last_sync_time: new Date('2023-01-02'),
+          status: 'synced',
+          record_count: 5,
+          success: true,
+          error_message: null
+        },
+        {
+          entity_type: 'forms',
+          last_sync_time: null,
+          status: 'not_synced',
+          record_count: 0,
+          success: false,
+          error_message: 'Not implemented'
+        }
+      ];
+      
+      (db.query as jest.Mock).mockResolvedValueOnce({
+        rows: mockRecords
+      });
+      
+      // Call the method
+      const result = await dataSyncService.getSyncStatus();
+      
+      // Verify result
+      expect(result.campaigns).toBeDefined();
+      expect(result.campaigns.lastSyncTime).toEqual(mockRecords[0].last_sync_time);
+      expect(result.campaigns.status).toBe('synced');
+      
+      expect(result.flows).toBeDefined();
+      expect(result.flows.lastSyncTime).toEqual(mockRecords[1].last_sync_time);
+      
+      expect(result.forms).toBeDefined();
+      expect(result.forms.success).toBe(false);
+    });
+  });
+  
+  describe('Incremental sync', () => {
+    it('should perform incremental sync when last sync timestamp exists', async () => {
+      // Setup
+      const lastSyncTime = new Date('2023-01-01');
+      
+      // Mock getLastSyncTimestamp to return a timestamp
+      jest.spyOn(dataSyncService, 'getLastSyncTimestamp').mockResolvedValueOnce(lastSyncTime);
+      
+      // Mock API response with updated_at timestamps for filtering
+      const mockApiResponse = {
+        data: [
+          {
+            id: 'flow-1',
+            attributes: {
+              name: 'Welcome Flow',
+              status: 'active',
+              updated_at: '2023-01-02T00:00:00Z', // After last sync
+              metrics: { recipient_count: '1000' }
+            }
+          },
+          {
+            id: 'flow-2',
+            attributes: {
+              name: 'Abandoned Cart Flow',
+              status: 'active',
+              updated_at: '2022-12-01T00:00:00Z' // Before last sync
+            }
+          }
+        ]
+      };
+      
+      // Mock other dependencies
+      (klaviyoApiClient.getFlows as jest.Mock).mockResolvedValueOnce(mockApiResponse);
+      (flowRepository.createBatch as jest.Mock).mockResolvedValueOnce([{ id: 'flow-1' }]);
+      
+      // Mock trackSyncTimestamp to do nothing
+      jest.spyOn(dataSyncService, 'trackSyncTimestamp').mockResolvedValueOnce();
+      
+      // Call the method - should use incremental sync
+      const result = await dataSyncService.syncFlows();
+      
+      // Verify correct flow was synced (only the one with newer timestamp)
+      expect(flowRepository.createBatch).toHaveBeenCalledTimes(1);
+      const createBatchArg = (flowRepository.createBatch as jest.Mock).mock.calls[0][0];
+      expect(createBatchArg).toHaveLength(1);
+      expect(createBatchArg[0].id).toBe('flow-1');
+      
+      // Verify result
+      expect(result.success).toBe(true);
+      expect(result.count).toBe(1);
+    });
+    
+    it('should perform full sync when force option is true', async () => {
+      // Setup a timestamp, but it should be ignored because force=true
+      const lastSyncTime = new Date('2023-01-01');
+      
+      // Mock getLastSyncTimestamp to return a timestamp
+      jest.spyOn(dataSyncService, 'getLastSyncTimestamp').mockResolvedValueOnce(lastSyncTime);
+      
+      // Mock API response
+      const mockApiResponse = {
+        data: [
+          {
+            id: 'flow-1',
+            attributes: {
+              name: 'Welcome Flow',
+              status: 'active',
+              updated_at: '2023-01-02T00:00:00Z', // After last sync
+              metrics: { recipient_count: '1000' }
+            }
+          },
+          {
+            id: 'flow-2',
+            attributes: {
+              name: 'Abandoned Cart Flow',
+              status: 'active',
+              updated_at: '2022-12-01T00:00:00Z' // Before last sync
+            }
+          }
+        ]
+      };
+      
+      // Mock other dependencies
+      (klaviyoApiClient.getFlows as jest.Mock).mockResolvedValueOnce(mockApiResponse);
+      (flowRepository.createBatch as jest.Mock).mockResolvedValueOnce([{ id: 'flow-1' }, { id: 'flow-2' }]);
+      
+      // Mock trackSyncTimestamp to do nothing
+      jest.spyOn(dataSyncService, 'trackSyncTimestamp').mockResolvedValueOnce();
+      
+      // Call the method with force option
+      const result = await dataSyncService.syncFlows({ force: true });
+      
+      // Verify both flows were synced (full sync)
+      expect(flowRepository.createBatch).toHaveBeenCalledTimes(1);
+      const createBatchArg = (flowRepository.createBatch as jest.Mock).mock.calls[0][0];
+      expect(createBatchArg).toHaveLength(2);
+      
+      // Verify result
+      expect(result.success).toBe(true);
+      expect(result.count).toBe(2);
     });
   });
 });

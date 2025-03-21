@@ -230,13 +230,16 @@ This gap remediation plan is designed to be completed in approximately 8 weeks:
    - ⏳ Add `POST /api/forms/sync` endpoint (pending)
    - ⏳ Add `POST /api/segments/sync` endpoint (pending)
    - ✅ Add `POST /api/sync/all` master sync endpoint (completed)
+   - ✅ Add `GET /api/sync/status` endpoint for sync status reporting (completed)
    - ✅ Test all new endpoints (completed for implemented endpoints)
 
-5. **Incremental Sync Implementation** - ✅ Partially Completed
+5. **Incremental Sync Implementation** - ✅ Completed
    - ✅ Modify `DataSyncService` to support incremental sync (completed)
-   - ✅ Add timestamp tracking for last sync (added sync_status_table - 005_sync_status_table.sql)
-   - ✅ Implement delta detection for efficient updates (implemented in DataSyncService)
-   - ✅ Add metrics for sync performance (implemented in DataSyncService)
+   - ✅ Add timestamp tracking for last sync using `klaviyo_sync_status` table (completed - 005_sync_status_table.sql)
+   - ✅ Implement delta detection for efficient updates (completed in DataSyncService)
+   - ✅ Add metrics for sync performance and status reporting (completed)
+   - ✅ Implement force sync option to override incremental sync when needed (completed)
+   - ✅ Add comprehensive tests for incremental sync functionality (completed)
 
 For the detailed implementation summary of the completed work in Phase 3, see [Phase 3 Implementation Summary](./phase3-implementation-summary.md).
 

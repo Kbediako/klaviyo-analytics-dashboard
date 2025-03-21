@@ -50,22 +50,22 @@ router.post('/all', async (req, res) => {
  */
 router.get('/status', async (req, res) => {
   try {
-    // In a complete implementation, this would get information about last sync times and statuses from a database
-    const entityTypes = ['campaigns', 'flows', 'forms', 'segments'];
-    const statusPromises = entityTypes.map(async (type) => {
-      const lastSync = await dataSyncService.getLastSyncTimestamp(type);
-      return {
-        entityType: type,
-        lastSyncTime: lastSync ? lastSync.toISOString() : null,
-        status: lastSync ? 'synced' : 'not_synced'
-      };
-    });
+    // Get sync status information from the database
+    const syncStatus = await dataSyncService.getSyncStatus();
     
-    const statuses = await Promise.all(statusPromises);
+    // Transform for API response
+    const statusArray = Object.entries(syncStatus).map(([entityType, status]) => ({
+      entityType,
+      lastSyncTime: status.lastSyncTime ? status.lastSyncTime.toISOString() : null,
+      status: status.status,
+      recordCount: status.recordCount,
+      success: status.success,
+      errorMessage: status.errorMessage
+    }));
     
     res.status(200).json({
       success: true,
-      syncStatus: statuses
+      syncStatus: statusArray
     });
   } catch (error) {
     logger.error('Error in sync status controller:', error);

@@ -396,6 +396,38 @@ export class FlowRepository {
       avgConversionRate
     };
   }
+
+  /**
+   * Find flows updated since a specific timestamp
+   * Used for incremental sync operations
+   * @param since Timestamp to find flows updated since
+   * @returns Array of flows updated since the timestamp
+   */
+  async findUpdatedSince(since: Date): Promise<Flow[]> {
+    logger.info(`Finding flows updated since ${since.toISOString()}`);
+    
+    const result = await db.query(
+      `SELECT * FROM klaviyo_flows 
+       WHERE updated_at > $1
+       ORDER BY updated_at DESC`,
+      [since]
+    );
+    
+    return result.rows;
+  }
+
+  /**
+   * Get the most recent update timestamp from the flows table
+   * Used for tracking sync operations
+   * @returns The most recent update timestamp or null if no flows exist
+   */
+  async getLatestUpdateTimestamp(): Promise<Date | null> {
+    const result = await db.query(
+      `SELECT MAX(updated_at) as latest_timestamp FROM klaviyo_flows`
+    );
+    
+    return result.rows[0]?.latest_timestamp || null;
+  }
 }
 
 // Create a singleton instance
