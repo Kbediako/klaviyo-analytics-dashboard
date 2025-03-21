@@ -44,6 +44,10 @@ CREATE INDEX idx_klaviyo_segments_status ON klaviyo_segments (status);
 CREATE INDEX idx_klaviyo_segments_name ON klaviyo_segments (name);
 CREATE INDEX idx_klaviyo_segments_created_date ON klaviyo_segments (created_date DESC);
 CREATE INDEX idx_klaviyo_segments_updated_at ON klaviyo_segments (updated_at DESC);
+CREATE INDEX idx_klaviyo_segments_member_count ON klaviyo_segments (member_count DESC);
+CREATE INDEX idx_klaviyo_segments_conversion ON klaviyo_segments (conversion_rate DESC);
+CREATE INDEX idx_klaviyo_segments_revenue ON klaviyo_segments (revenue DESC);
+CREATE INDEX idx_klaviyo_segments_metadata_gin ON klaviyo_segments USING GIN (metadata);
 ```
 
 ### 3.2 Repository Pattern Implementation
@@ -72,6 +76,13 @@ Each repository includes:
 - Batch operations for efficient data insertion
 - Search methods with various filters
 - Sync-related methods to support incremental sync
+- Performance metrics collection methods (getPerformanceMetrics)
+- Analysis methods like:
+  - countByStatus
+  - getTopPerformingSegments
+  - getHighestConversionSegments
+  - updateMetrics
+- Advanced query capabilities with metadata-based filtering
 
 ### 3.3 Data Sync Service
 
@@ -124,6 +135,11 @@ Key features of the sync service:
 - Database timestamp tracking for efficient data updates
 - Proper error handling and retry mechanisms
 - Status tracking for monitoring sync operations
+- Sync status records in klaviyo_sync_status table
+- Performance metrics collection for sync operations
+- Fallback mechanisms for handling API unavailability
+- getSyncStatus method for monitoring sync progress
+- Support for selective entity synchronization
 
 ### 3.4 Controller Implementation (Database-First Approach)
 
@@ -200,6 +216,22 @@ We added new endpoints for manually triggering sync operations:
  * @access  Public
  */
 router.post('/sync', syncSegments);
+
+/**
+ * @route   GET /api/sync/status
+ * @desc    Get the current sync status for all entities
+ * @access  Public
+ */
+router.get('/status', getSyncStatus);
+
+/**
+ * @route   POST /api/sync/all
+ * @desc    Sync all entities from Klaviyo API to database
+ * @query   force - Whether to force a full sync (optional, default: false)
+ * @query   entities - Comma-separated list of entities to sync (optional)
+ * @access  Public
+ */
+router.post('/all', syncAllEntities);
 ```
 
 These endpoints are excluded from caching middleware:
@@ -208,6 +240,9 @@ These endpoints are excluded from caching middleware:
 // Special handling for segments routes to exclude sync endpoint from caching
 app.use('/api/segments/sync', segmentsRoutes);
 app.use('/api/segments', cacheMiddleware(CACHE_TTLS.segments), segmentsRoutes);
+
+// Sync endpoints have their own router
+app.use('/api/sync', syncRoutes);
 ```
 
 ### 3.6 Comprehensive Testing
