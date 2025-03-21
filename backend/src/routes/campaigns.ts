@@ -9,7 +9,7 @@ const router = express.Router();
  * @query   dateRange - Date range to get campaigns for (e.g., 'last-30-days')
  * @access  Public
  */
-router.get('/', getCampaigns);
+router.get('/', (req, res) => getCampaigns(req, res));
 
 /**
  * @route   POST /api/campaigns/sync

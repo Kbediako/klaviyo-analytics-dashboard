@@ -15,10 +15,11 @@ export function cacheMiddleware(options: CacheOptions = {}) {
     vary = ['accept', 'accept-encoding']
   } = options;
 
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     // Skip caching for non-GET requests or if force refresh is requested
     if (req.method !== 'GET' || req.query._t) {
-      return next();
+      next();
+      return;
     }
 
     // Generate cache key including vary headers
@@ -34,7 +35,8 @@ export function cacheMiddleware(options: CacheOptions = {}) {
         res.setHeader('Vary', vary.join(', '));
         res.setHeader('X-Cache', 'HIT');
         res.setHeader('ETag', `"${Buffer.from(JSON.stringify(cachedData)).toString('base64')}"`)
-        return res.json(cachedData);
+        res.json(cachedData);
+        return;
       }
 
       // Store original res.json to intercept the response
@@ -64,7 +66,7 @@ export function cacheMiddleware(options: CacheOptions = {}) {
 }
 
 export function clearCacheMiddleware(pattern: string) {
-  return async (_req: Request, res: Response, next: NextFunction) => {
+  return async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       await cacheService.deletePattern(pattern);
       next();
@@ -76,7 +78,7 @@ export function clearCacheMiddleware(pattern: string) {
 }
 
 export function invalidateCacheMiddleware(patterns: string[]) {
-  return async (_req: Request, res: Response, next: NextFunction) => {
+  return async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       await Promise.all(patterns.map(pattern => cacheService.deletePattern(pattern)));
       next();
