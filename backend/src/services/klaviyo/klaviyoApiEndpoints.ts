@@ -41,7 +41,7 @@ export class KlaviyoApiEndpoints {
         ],
         include: ['tags'],
         fields: {
-          campaign: ['name', 'status', 'created', 'updated', 'archived', 'send_time', 'id']
+          campaign: ['name', 'status', 'created_at', 'updated_at', 'archived', 'send_time', 'id']
         },
         page: {
           size: 50
