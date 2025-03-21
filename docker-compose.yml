@@ -43,6 +43,21 @@ services:
       -c max_parallel_workers_per_gather=4
       -c jit=off
   
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+  
   # Backup service runs on a schedule to perform database backups
   backup-service:
     image: postgres:14
@@ -73,4 +88,6 @@ volumes:
   timescaledb_data:
     driver: local
   db_backups:
+    driver: local
+  redis_data:
     driver: local
