@@ -54,7 +54,7 @@ jobs:
       
       - name: Install dependencies
         run: |
-          npm ci
+          npm install
           cd backend && npm ci
       
       - name: Setup debug environment
