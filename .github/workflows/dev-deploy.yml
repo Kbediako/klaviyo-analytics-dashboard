@@ -4,6 +4,13 @@ on:
   push:
     branches:
       - develop
+    paths-ignore:
+      - '.github/workflows/**'
+      - 'github/workflows/**'
+      - '**.md'
+      - 'push-changes.sh'
+      - 'push-to-github.sh'
+      - 'commit-*.sh'
   workflow_dispatch:
     inputs:
       environment:

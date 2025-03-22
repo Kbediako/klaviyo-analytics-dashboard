@@ -2,19 +2,23 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main develop ]
     paths-ignore:
       - '.github/workflows/**'
+      - 'github/workflows/**'
       - '**.md'
       - 'push-changes.sh'
       - 'push-to-github.sh'
+      - 'commit-*.sh'
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main develop ]
     paths-ignore:
       - '.github/workflows/**'
+      - 'github/workflows/**'
       - '**.md'
       - 'push-changes.sh'
       - 'push-to-github.sh'
+      - 'commit-*.sh'
 
 jobs:
   test:
@@ -346,4 +350,3 @@ jobs:
           }
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

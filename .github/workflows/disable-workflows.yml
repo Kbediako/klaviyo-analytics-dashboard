@@ -1,0 +1,55 @@
+name: Disable Unnecessary Workflows
+
+on:
+  push:
+    branches: [ main, develop, fix/workflows ]
+    paths:
+      - '.github/workflows/disable-workflows.yml'
+
+jobs:
+  disable-workflows:
+    name: Disable Unnecessary Workflows
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          
+      - name: Install GitHub CLI
+        run: |
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+          sudo apt update
+          sudo apt install gh
+          
+      - name: Authenticate with GitHub
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+          
+      - name: Disable Debug Workflow
+        run: |
+          # Get workflow IDs
+          WORKFLOWS=$(gh api repos/${{ github.repository }}/actions/workflows | jq -r '.workflows[] | select(.name | test("Debug Workflow")) | .id')
+          
+          # Disable each workflow
+          for WORKFLOW_ID in $WORKFLOWS; do
+            echo "Disabling workflow ID: $WORKFLOW_ID"
+            gh api -X PUT repos/${{ github.repository }}/actions/workflows/$WORKFLOW_ID/disable
+          done
+          
+      - name: Disable Simple Debug Workflow
+        run: |
+          # Get workflow ID
+          WORKFLOW_ID=$(gh api repos/${{ github.repository }}/actions/workflows | jq -r '.workflows[] | select(.name == "Simple Debug Workflow") | .id')
+          
+          if [ ! -z "$WORKFLOW_ID" ]; then
+            echo "Disabling Simple Debug Workflow (ID: $WORKFLOW_ID)"
+            gh api -X PUT repos/${{ github.repository }}/actions/workflows/$WORKFLOW_ID/disable
+          else
+            echo "Simple Debug Workflow not found"
+          fi
